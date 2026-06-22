@@ -116,10 +116,11 @@
                 allProjects = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 allProjects.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                 buildFilters();
-                renderGrid(allProjects);
+                renderGrid(allProjects, true);
                 buildYearTrack();
             } catch (e) {
-                document.getElementById("projectGrid").innerHTML = `<div class="empty-state"><p>Could not load projects. Check your Firebase config.</p></div>`;
+                console.error("Firestore error:", e);
+                document.getElementById("projectGrid").innerHTML = `<div class="empty-state"><p>Could not load projects.<br><small style="color:#999">${e.message}</small></p></div>`;
             }
         }
 
@@ -160,10 +161,14 @@
             track.innerHTML = semesters.map(s => `<span>${s}</span>`).join("");
         }
 
-        function renderGrid(projects) {
+        function renderGrid(projects, isInitial = false) {
             const grid = document.getElementById("projectGrid");
             if (!projects.length) {
-                grid.innerHTML = `<div class="empty-state"><p>No projects match this filter.</p></div>`;
+                if (isInitial) {
+                    grid.innerHTML = `<div class="empty-state"><p>No projects yet. <a href="admin.html">Add one →</a></p></div>`;
+                } else {
+                    grid.innerHTML = `<div class="empty-state"><p>No projects match this filter.</p></div>`;
+                }
                 return;
             }
             grid.innerHTML = projects.map(p => `

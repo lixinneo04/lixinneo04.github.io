@@ -409,6 +409,16 @@
             return (bytes / (1024 * 1024)).toFixed(1) + " MB";
         }
 
+        // Helper: race a promise against a timeout
+        function withTimeout(promise, ms, label) {
+            return Promise.race([
+                promise,
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error(label + " timed out after " + (ms/1000) + "s. Check Firebase Storage rules.")), ms)
+                )
+            ]);
+        }
+
         document.getElementById("saveProjectBtn").addEventListener("click", async () => {
             const title = document.getElementById("fTitle").value.trim();
             if (!title) { document.getElementById("fTitle").focus(); return; }
@@ -418,19 +428,22 @@
             try {
                 let imageUrl = existingImageUrl || null;
                 if (pendingFile) {
+                    showStatus("projectStatus", "Uploading cover image…", "info");
                     const imgRef = ref(storage, `projects/${Date.now()}_${pendingFile.name}`);
-                    await uploadBytes(imgRef, pendingFile);
+                    await withTimeout(uploadBytes(imgRef, pendingFile), 30000, "Image upload");
                     imageUrl = await getDownloadURL(imgRef);
                 }
-                // Upload any new project files
-                showStatus("projectStatus", pendingFiles.length ? `Uploading ${pendingFiles.length} file(s)…` : "Saving…", "info");
+                if (pendingFiles.length) {
+                    showStatus("projectStatus", `Uploading ${pendingFiles.length} file(s)…`, "info");
+                }
                 const uploadedFiles = await Promise.all(pendingFiles.map(async f => {
                     const fRef = ref(storage, `files/${Date.now()}_${f.name}`);
-                    await uploadBytes(fRef, f);
+                    await withTimeout(uploadBytes(fRef, f), 30000, "Upload of " + f.name);
                     const url = await getDownloadURL(fRef);
                     return { name: f.name, url, size: f.size, type: f.type };
                 }));
                 const files = [...existingFiles, ...uploadedFiles];
+                showStatus("projectStatus", "Saving…", "info");
                 const data = {
                     title,
                     year: document.getElementById("fYear").value,
@@ -452,9 +465,11 @@
                 await loadProjects();
                 setTimeout(closeProjectModal, 800);
             } catch (e) {
+                console.error("Save failed:", e);
                 showStatus("projectStatus", "Error: " + e.message, "error");
+            } finally {
+                btn.disabled = false; btn.textContent = "Save project";
             }
-            btn.disabled = false; btn.textContent = "Save project";
         });
 
         async function deleteProject(id) {
