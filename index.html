@@ -58,6 +58,7 @@
                 <div class="modal-meta" id="modalMeta"></div>
                 <h2 class="modal-title" id="modalTitle"></h2>
                 <p class="modal-desc" id="modalDesc"></p>
+                <div class="modal-files" id="modalFiles"></div>
                 <div class="modal-actions" id="modalActions"></div>
             </div>
         </div>
@@ -206,8 +207,40 @@
             actions.innerHTML = "";
             if (p.github) actions.innerHTML += `<a href="${p.github}" target="_blank" rel="noopener" class="action-link">GitHub ↗</a>`;
             if (p.demo) actions.innerHTML += `<a href="${p.demo}" target="_blank" rel="noopener" class="action-link">Live demo ↗</a>`;
+            // Files / Attachments
+            const filesEl = document.getElementById("modalFiles");
+            if (p.files && p.files.length) {
+                filesEl.innerHTML = `
+                    <p class="modal-files-label">Attachments</p>
+                    <div class="modal-file-list">
+                        ${p.files.map(f => `
+                            <a href="${f.url}" target="_blank" rel="noopener" class="modal-file-item" download="${f.name}">
+                                <span class="modal-file-icon">${fileIcon(f.name)}</span>
+                                <span class="modal-file-info">
+                                    <span class="modal-file-name">${f.name}</span>
+                                    <span class="modal-file-size">${formatSize(f.size)}</span>
+                                </span>
+                                <span class="modal-file-open">↗</span>
+                            </a>`).join("")}
+                    </div>`;
+            } else {
+                filesEl.innerHTML = "";
+            }
             document.getElementById("modalBackdrop").classList.add("open");
             document.body.style.overflow = "hidden";
+        }
+
+        function fileIcon(name) {
+            const ext = (name || "").split(".").pop().toLowerCase();
+            const icons = { pdf: "📄", zip: "🗜️", pptx: "📊", ppt: "📊", docx: "📝", doc: "📝", xlsx: "📊", xls: "📊", txt: "📃", py: "🐍", js: "⚡", ts: "⚡", cpp: "⚙️", java: "☕", ipynb: "📓" };
+            return icons[ext] || "📎";
+        }
+
+        function formatSize(bytes) {
+            if (!bytes) return "";
+            if (bytes < 1024) return bytes + " B";
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+            return (bytes / (1024 * 1024)).toFixed(1) + " MB";
         }
 
         document.getElementById("modalClose").addEventListener("click", closeModal);

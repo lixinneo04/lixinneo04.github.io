@@ -145,6 +145,15 @@
                         <input type="url" id="fDemo" placeholder="https://…" />
                     </div>
                 </div>
+                <div class="field">
+                    <label>Project Files <span class="upload-hint" style="margin-left:6px">(PDF, ZIP, PPTX, DOCX… · max 20 MB each)</span></label>
+                    <div class="upload-zone upload-zone-files" id="fileUploadZone">
+                        <input type="file" id="fileInput" accept=".pdf,.zip,.pptx,.docx,.doc,.xlsx,.txt,.py,.js,.cpp,.java,.ipynb" multiple />
+                        <p>Click to attach files or drag them here</p>
+                        <span class="upload-hint">PDF, ZIP, PPTX, DOCX, code files and more</span>
+                    </div>
+                    <div id="fileList" class="file-list"></div>
+                </div>
                 <div id="projectStatus" class="status-msg"></div>
             </div>
             <div class="modal-footer">
@@ -233,8 +242,10 @@
 
         let projects = [];
         let editingId = null;
-        let pendingFile = null;
+        let pendingFile = null;       // cover image
         let existingImageUrl = null;
+        let pendingFiles = [];        // project files queued for upload
+        let existingFiles = [];       // already-saved files from Firestore
 
         async function loadProjects() {
             const list = document.getElementById("adminProjectList");
@@ -291,6 +302,11 @@
             document.getElementById("fDemo").value = p?.demo || "";
             document.getElementById("imgInput").value = "";
             document.getElementById("projectStatus").textContent = "";
+            // Reset file attachments
+            pendingFiles = [];
+            existingFiles = p?.files ? [...p.files] : [];
+            document.getElementById("fileInput").value = "";
+            renderFileList();
             if (p?.imageUrl) {
                 existingImageUrl = p.imageUrl;
                 document.getElementById("imgPreview").src = p.imageUrl;
@@ -334,6 +350,61 @@
             document.getElementById("imgPreviewWrap").style.display = "none";
         });
 
+        // ── Project file attachments ──────────────────────────────────────────────
+        document.getElementById("fileInput").addEventListener("change", e => {
+            const newFiles = Array.from(e.target.files);
+            const oversized = newFiles.filter(f => f.size > 20 * 1024 * 1024);
+            if (oversized.length) {
+                alert(`These files exceed 20 MB and were skipped:\n${oversized.map(f => f.name).join("\n")}`);
+            }
+            pendingFiles.push(...newFiles.filter(f => f.size <= 20 * 1024 * 1024));
+            document.getElementById("fileInput").value = "";
+            renderFileList();
+        });
+
+        function renderFileList() {
+            const el = document.getElementById("fileList");
+            const rows = [
+                ...existingFiles.map((f, i) => `
+                    <div class="file-chip" data-existing="${i}">
+                        <span class="file-chip-icon">${fileIcon(f.name)}</span>
+                        <span class="file-chip-name" title="${f.name}">${f.name}</span>
+                        <span class="file-chip-size">${formatSize(f.size)}</span>
+                        <button class="file-chip-remove" data-existing="${i}" aria-label="Remove">&#x2715;</button>
+                    </div>`),
+                ...pendingFiles.map((f, i) => `
+                    <div class="file-chip file-chip-new" data-pending="${i}">
+                        <span class="file-chip-icon">${fileIcon(f.name)}</span>
+                        <span class="file-chip-name" title="${f.name}">${f.name}</span>
+                        <span class="file-chip-size">${formatSize(f.size)}</span>
+                        <button class="file-chip-remove" data-pending="${i}" aria-label="Remove">&#x2715;</button>
+                    </div>`)
+            ];
+            el.innerHTML = rows.join("");
+            el.querySelectorAll(".file-chip-remove").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    if (btn.dataset.existing !== undefined) {
+                        existingFiles.splice(Number(btn.dataset.existing), 1);
+                    } else {
+                        pendingFiles.splice(Number(btn.dataset.pending), 1);
+                    }
+                    renderFileList();
+                });
+            });
+        }
+
+        function fileIcon(name) {
+            const ext = name.split(".").pop().toLowerCase();
+            const icons = { pdf: "📄", zip: "🗜️", pptx: "📊", ppt: "📊", docx: "📝", doc: "📝", xlsx: "📊", xls: "📊", txt: "📃", py: "🐍", js: "⚡", ts: "⚡", cpp: "⚙️", java: "☕", ipynb: "📓" };
+            return icons[ext] || "📎";
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + " B";
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+            return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+        }
+
         document.getElementById("saveProjectBtn").addEventListener("click", async () => {
             const title = document.getElementById("fTitle").value.trim();
             if (!title) { document.getElementById("fTitle").focus(); return; }
@@ -347,6 +418,15 @@
                     await uploadBytes(imgRef, pendingFile);
                     imageUrl = await getDownloadURL(imgRef);
                 }
+                // Upload any new project files
+                showStatus("projectStatus", pendingFiles.length ? `Uploading ${pendingFiles.length} file(s)…` : "Saving…", "info");
+                const uploadedFiles = await Promise.all(pendingFiles.map(async f => {
+                    const fRef = ref(storage, `files/${Date.now()}_${f.name}`);
+                    await uploadBytes(fRef, f);
+                    const url = await getDownloadURL(fRef);
+                    return { name: f.name, url, size: f.size, type: f.type };
+                }));
+                const files = [...existingFiles, ...uploadedFiles];
                 const data = {
                     title,
                     year: document.getElementById("fYear").value,
@@ -356,6 +436,7 @@
                     github: document.getElementById("fGithub").value.trim(),
                     demo: document.getElementById("fDemo").value.trim(),
                     imageUrl,
+                    files,
                 };
                 if (editingId) {
                     await updateDoc(doc(db, "projects", editingId), data);
