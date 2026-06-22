@@ -171,8 +171,7 @@
             from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
         import { getFirestore, collection, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp }
             from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject }
-            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+        // Cloudinary used for image & file uploads (no Firebase Storage needed)
 
         // ─── PASTE YOUR FIREBASE CONFIG HERE ───────────────────────────────────────
         const firebaseConfig = {
@@ -189,8 +188,23 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const storage = getStorage(app);
         const provider = new GoogleAuthProvider();
+
+        // ─── CLOUDINARY CONFIG ──────────────────────────────────────────────────────
+        const CLOUDINARY_CLOUD = "dcvjbfu9s";
+        const CLOUDINARY_PRESET = "neo_upload";
+        const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/upload`;
+
+        async function uploadToCloudinary(file) {
+            const fd = new FormData();
+            fd.append("file", file);
+            fd.append("upload_preset", CLOUDINARY_PRESET);
+            const res = await fetch(CLOUDINARY_URL, { method: "POST", body: fd });
+            if (!res.ok) throw new Error("Cloudinary upload failed: " + res.statusText);
+            const data = await res.json();
+            return data.secure_url;
+        }
+        // ───────────────────────────────────────────────────────────────────────────
 
         document.getElementById("loginBtn").addEventListener("click", () => signInWithPopup(auth, provider));
         document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
@@ -409,16 +423,6 @@
             return (bytes / (1024 * 1024)).toFixed(1) + " MB";
         }
 
-        // Helper: race a promise against a timeout
-        function withTimeout(promise, ms, label) {
-            return Promise.race([
-                promise,
-                new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error(label + " timed out after " + (ms/1000) + "s. Check Firebase Storage rules.")), ms)
-                )
-            ]);
-        }
-
         document.getElementById("saveProjectBtn").addEventListener("click", async () => {
             const title = document.getElementById("fTitle").value.trim();
             if (!title) { document.getElementById("fTitle").focus(); return; }
@@ -429,17 +433,13 @@
                 let imageUrl = existingImageUrl || null;
                 if (pendingFile) {
                     showStatus("projectStatus", "Uploading cover image…", "info");
-                    const imgRef = ref(storage, `projects/${Date.now()}_${pendingFile.name}`);
-                    await withTimeout(uploadBytes(imgRef, pendingFile), 30000, "Image upload");
-                    imageUrl = await getDownloadURL(imgRef);
+                    imageUrl = await uploadToCloudinary(pendingFile);
                 }
                 if (pendingFiles.length) {
                     showStatus("projectStatus", `Uploading ${pendingFiles.length} file(s)…`, "info");
                 }
                 const uploadedFiles = await Promise.all(pendingFiles.map(async f => {
-                    const fRef = ref(storage, `files/${Date.now()}_${f.name}`);
-                    await withTimeout(uploadBytes(fRef, f), 30000, "Upload of " + f.name);
-                    const url = await getDownloadURL(fRef);
+                    const url = await uploadToCloudinary(f);
                     return { name: f.name, url, size: f.size, type: f.type };
                 }));
                 const files = [...existingFiles, ...uploadedFiles];
@@ -475,8 +475,6 @@
         async function deleteProject(id) {
             if (!confirm("Delete this project? This cannot be undone.")) return;
             try {
-                const p = projects.find(x => x.id === id);
-                if (p?.imageUrl) { try { await deleteObject(ref(storage, p.imageUrl)); } catch (_) { } }
                 await deleteDoc(doc(db, "projects", id));
                 await loadProjects();
             } catch (e) { alert("Could not delete: " + e.message); }
