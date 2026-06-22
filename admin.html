@@ -81,6 +81,16 @@
                     <p class="loading-text">Loading projects…</p>
                 </div>
             </section>
+
+            <section class="admin-section">
+                <div class="section-header">
+                    <h2>Certifications</h2>
+                    <button class="btn-primary" id="openAddCertBtn">+ Add certification</button>
+                </div>
+                <div id="adminCertList" class="admin-project-list">
+                    <p class="loading-text">Loading…</p>
+                </div>
+            </section>
         </div>
     </div>
 
@@ -165,6 +175,69 @@
         </div>
     </div>
 
+    <!-- Certification modal -->
+    <div class="modal-backdrop" id="certModal">
+        <div class="modal modal-wide" role="dialog" aria-modal="true">
+            <div class="modal-header">
+                <h2 id="certModalTitle">Add certification</h2>
+                <button class="modal-close" id="certModalClose" aria-label="Close">&#x2715;</button>
+            </div>
+            <div class="modal-body admin-modal-body">
+                <div class="field-row">
+                    <div class="field">
+                        <label>Title <span class="req">*</span></label>
+                        <input type="text" id="cTitle" placeholder="e.g. AWS Certified Developer, ICPC Regionals" />
+                    </div>
+                    <div class="field field-sm">
+                        <label>Category <span class="req">*</span></label>
+                        <select id="cCategory">
+                            <option value="Competition">Competition</option>
+                            <option value="Exam">Exam</option>
+                            <option value="Course">Course</option>
+                            <option value="Award">Award</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label>Issuer / Organisation <span class="req">*</span></label>
+                        <input type="text" id="cIssuer" placeholder="e.g. Amazon Web Services, Coursera" />
+                    </div>
+                    <div class="field field-sm">
+                        <label>Date Issued</label>
+                        <input type="month" id="cDate" />
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Description</label>
+                    <textarea id="cDesc" rows="3" placeholder="Brief description of what this certifies or recognises…"></textarea>
+                </div>
+                <div class="field">
+                    <label>Certificate image</label>
+                    <div class="upload-zone" id="certUploadZone">
+                        <input type="file" id="cImgInput" accept="image/*" />
+                        <p>Upload your certificate image</p>
+                        <span class="upload-hint">JPG, PNG, WebP · max 5 MB</span>
+                    </div>
+                    <div id="cImgPreviewWrap" style="display:none;margin-top:10px">
+                        <img id="cImgPreview" style="max-height:180px;border-radius:8px;border:1px solid #eee" alt="Preview" />
+                        <button class="btn-ghost" id="removeCertImgBtn" style="margin-left:10px;font-size:13px">Remove</button>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Credential / Verify URL</label>
+                    <input type="url" id="cCredUrl" placeholder="https://… (link to verify the certificate)" />
+                </div>
+                <div id="certStatus" class="status-msg"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" id="cancelCertBtn">Cancel</button>
+                <button class="btn-primary" id="saveCertBtn">Save certification</button>
+            </div>
+        </div>
+    </div>
+
     <script src="config.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -217,6 +290,7 @@
                 document.getElementById("adminUser").textContent = user.displayName || user.email;
                 loadProfile();
                 loadProjects();
+                loadCerts();
             } else {
                 document.getElementById("loginScreen").style.display = "flex";
                 document.getElementById("adminDash").style.display = "none";
@@ -485,6 +559,158 @@
             const el = document.getElementById(id);
             el.textContent = msg;
             el.className = "status-msg status-" + type;
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // CERTIFICATIONS
+        // ═══════════════════════════════════════════════════════════════════════════
+        let certs = [];
+        let editingCertId = null;
+        let pendingCertImg = null;
+        let existingCertImg = null;
+
+        async function loadCerts() {
+            const list = document.getElementById("adminCertList");
+            list.innerHTML = `<p class="loading-text">Loading…</p>`;
+            try {
+                const snap = await getDocs(collection(db, "certifications"));
+                certs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                certs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                renderCertList();
+            } catch (e) {
+                list.innerHTML = `<p class="error-text">${e.message}</p>`;
+            }
+        }
+
+        function renderCertList() {
+            const list = document.getElementById("adminCertList");
+            if (!certs.length) {
+                list.innerHTML = `<div class="empty-state"><p>No certifications yet. Add your first one!</p></div>`;
+                return;
+            }
+            list.innerHTML = certs.map(c => `
+                <div class="admin-project-row" data-id="${c.id}">
+                    <div class="admin-project-thumb">
+                        ${c.imageUrl ? `<img src="${c.imageUrl}" alt="" />` : `<div class="thumb-placeholder cert-thumb-icon">🏅</div>`}
+                    </div>
+                    <div class="admin-project-info">
+                        <strong>${c.title}</strong>
+                        <span>${c.issuer || ""}${c.category ? " · " + c.category : ""}${c.date ? " · " + c.date : ""}</span>
+                    </div>
+                    <div class="admin-project-actions">
+                        <button class="btn-ghost edit-cert-btn" data-id="${c.id}">Edit</button>
+                        <button class="btn-danger delete-cert-btn" data-id="${c.id}">Delete</button>
+                    </div>
+                </div>`).join("");
+            list.querySelectorAll(".edit-cert-btn").forEach(btn =>
+                btn.addEventListener("click", () => openCertModal(btn.dataset.id)));
+            list.querySelectorAll(".delete-cert-btn").forEach(btn =>
+                btn.addEventListener("click", () => deleteCert(btn.dataset.id)));
+        }
+
+        function openCertModal(id) {
+            editingCertId = id || null;
+            pendingCertImg = null;
+            existingCertImg = null;
+            const c = id ? certs.find(x => x.id === id) : null;
+            document.getElementById("certModalTitle").textContent = id ? "Edit certification" : "Add certification";
+            document.getElementById("cTitle").value = c?.title || "";
+            document.getElementById("cCategory").value = c?.category || "Competition";
+            document.getElementById("cIssuer").value = c?.issuer || "";
+            document.getElementById("cDate").value = c?.date || "";
+            document.getElementById("cDesc").value = c?.description || "";
+            document.getElementById("cCredUrl").value = c?.credentialUrl || "";
+            document.getElementById("cImgInput").value = "";
+            document.getElementById("certStatus").textContent = "";
+            if (c?.imageUrl) {
+                existingCertImg = c.imageUrl;
+                document.getElementById("cImgPreview").src = c.imageUrl;
+                document.getElementById("cImgPreviewWrap").style.display = "block";
+            } else {
+                document.getElementById("cImgPreviewWrap").style.display = "none";
+                document.getElementById("cImgPreview").src = "";
+            }
+            document.getElementById("certModal").classList.add("open");
+            document.body.style.overflow = "hidden";
+        }
+
+        function closeCertModal() {
+            document.getElementById("certModal").classList.remove("open");
+            document.body.style.overflow = "";
+        }
+
+        document.getElementById("openAddCertBtn").addEventListener("click", () => openCertModal(null));
+        document.getElementById("certModalClose").addEventListener("click", closeCertModal);
+        document.getElementById("cancelCertBtn").addEventListener("click", closeCertModal);
+        document.getElementById("certModal").addEventListener("click", e => { if (e.target === e.currentTarget) closeCertModal(); });
+
+        document.getElementById("cImgInput").addEventListener("change", e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) { alert("Image must be under 5 MB."); return; }
+            pendingCertImg = file;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                document.getElementById("cImgPreview").src = ev.target.result;
+                document.getElementById("cImgPreviewWrap").style.display = "block";
+            };
+            reader.readAsDataURL(file);
+        });
+
+        document.getElementById("removeCertImgBtn").addEventListener("click", () => {
+            pendingCertImg = null;
+            existingCertImg = null;
+            document.getElementById("cImgInput").value = "";
+            document.getElementById("cImgPreview").src = "";
+            document.getElementById("cImgPreviewWrap").style.display = "none";
+        });
+
+        document.getElementById("saveCertBtn").addEventListener("click", async () => {
+            const title = document.getElementById("cTitle").value.trim();
+            const issuer = document.getElementById("cIssuer").value.trim();
+            if (!title) { document.getElementById("cTitle").focus(); return; }
+            if (!issuer) { document.getElementById("cIssuer").focus(); return; }
+            const btn = document.getElementById("saveCertBtn");
+            btn.disabled = true; btn.textContent = "Saving…";
+            showStatus("certStatus", "Saving…", "info");
+            try {
+                let imageUrl = existingCertImg || null;
+                if (pendingCertImg) {
+                    showStatus("certStatus", "Uploading image…", "info");
+                    imageUrl = await uploadToCloudinary(pendingCertImg);
+                }
+                const data = {
+                    title,
+                    issuer,
+                    category: document.getElementById("cCategory").value,
+                    date: document.getElementById("cDate").value,
+                    description: document.getElementById("cDesc").value.trim(),
+                    credentialUrl: document.getElementById("cCredUrl").value.trim(),
+                    imageUrl,
+                };
+                if (editingCertId) {
+                    await updateDoc(doc(db, "certifications", editingCertId), data);
+                } else {
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, "certifications"), data);
+                }
+                showStatus("certStatus", "Saved ✓", "success");
+                await loadCerts();
+                setTimeout(closeCertModal, 800);
+            } catch (e) {
+                console.error("Cert save failed:", e);
+                showStatus("certStatus", "Error: " + e.message, "error");
+            } finally {
+                btn.disabled = false; btn.textContent = "Save certification";
+            }
+        });
+
+        async function deleteCert(id) {
+            if (!confirm("Delete this certification? This cannot be undone.")) return;
+            try {
+                await deleteDoc(doc(db, "certifications", id));
+                await loadCerts();
+            } catch (e) { alert("Could not delete: " + e.message); }
         }
     </script>
 </body>

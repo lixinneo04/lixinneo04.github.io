@@ -17,6 +17,7 @@
         <span class="nav-logo" id="navName">Portfolio</span>
         <div class="nav-links">
             <a href="#work">Work</a>
+            <a href="#certifications">Certifications</a>
             <a href="#about">About</a>
         </div>
     </nav>
@@ -47,6 +48,36 @@
             </div>
         </div>
     </main>
+
+    <!-- Certifications section -->
+    <section class="certs-section" id="certifications">
+        <div class="container">
+            <div class="section-heading">
+                <h2>Certifications</h2>
+                <p class="section-sub">Competitions, exams &amp; courses</p>
+            </div>
+            <div class="cert-grid" id="certGrid">
+                <div class="empty-state"><p>No certifications yet.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Cert detail modal -->
+    <div class="modal-backdrop" id="certModalBackdrop">
+        <div class="modal cert-detail-modal" role="dialog" aria-modal="true">
+            <button class="modal-close" id="certModalClose" aria-label="Close">&#x2715;</button>
+            <div class="modal-img-wrap" id="certModalImgWrap">
+                <img id="certModalImg" src="" alt="" />
+            </div>
+            <div class="modal-body">
+                <div class="modal-meta" id="certModalMeta"></div>
+                <h2 class="modal-title" id="certModalTitle"></h2>
+                <p class="cert-modal-issuer" id="certModalIssuer"></p>
+                <p class="modal-desc" id="certModalDesc"></p>
+                <div class="modal-actions" id="certModalActions"></div>
+            </div>
+        </div>
+    </div>
 
     <div class="modal-backdrop" id="modalBackdrop">
         <div class="modal" role="dialog" aria-modal="true">
@@ -90,6 +121,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         let allProjects = [];
+        let allCerts = [];
 
         async function loadProfile() {
             try {
@@ -260,6 +292,95 @@
 
         loadProfile();
         loadProjects();
+        loadCerts();
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // CERTIFICATIONS
+        // ─────────────────────────────────────────────────────────────────────────
+        async function loadCerts() {
+            try {
+                const snap = await getDocs(collection(db, "certifications"));
+                allCerts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                allCerts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                renderCerts();
+            } catch (e) {
+                console.error("Certs error:", e);
+            }
+        }
+
+        const CERT_CATEGORY_COLORS = {
+            "Competition": { bg: "#fef9c3", color: "#854d0e" },
+            "Exam":        { bg: "#ede9fe", color: "#5b21b6" },
+            "Course":      { bg: "#dcfce7", color: "#166534" },
+            "Award":       { bg: "#fce7f3", color: "#9d174d" },
+            "Other":       { bg: "#f1f5f9", color: "#475569" },
+        };
+
+        function certCategoryBadge(cat) {
+            const s = CERT_CATEGORY_COLORS[cat] || CERT_CATEGORY_COLORS["Other"];
+            return `<span class="badge" style="background:${s.bg};color:${s.color}">${cat || "Certificate"}</span>`;
+        }
+
+        function renderCerts() {
+            const grid = document.getElementById("certGrid");
+            if (!allCerts.length) {
+                grid.innerHTML = `<div class="empty-state"><p>No certifications yet.</p></div>`;
+                return;
+            }
+            grid.innerHTML = allCerts.map(c => `
+                <article class="cert-card" data-id="${c.id}" tabindex="0" role="button" aria-label="View ${c.title}">
+                    <div class="cert-card-img">
+                        ${c.imageUrl
+                            ? `<img src="${c.imageUrl}" alt="${c.title}" loading="lazy" />`
+                            : `<div class="cert-img-placeholder">🏅</div>`}
+                    </div>
+                    <div class="cert-card-body">
+                        <div class="card-meta">
+                            ${certCategoryBadge(c.category)}
+                            ${c.date ? `<span class="badge badge-cat">${c.date.replace("-", " / ")}</span>` : ""}
+                        </div>
+                        <h3>${c.title}</h3>
+                        <p class="cert-issuer">${c.issuer || ""}</p>
+                    </div>
+                </article>`).join("");
+            grid.querySelectorAll(".cert-card").forEach(card => {
+                const open = () => openCertModal(card.dataset.id);
+                card.addEventListener("click", open);
+                card.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") open(); });
+            });
+        }
+
+        function openCertModal(id) {
+            const c = allCerts.find(x => x.id === id);
+            if (!c) return;
+            document.getElementById("certModalTitle").textContent = c.title;
+            document.getElementById("certModalIssuer").textContent = c.issuer || "";
+            document.getElementById("certModalDesc").textContent = c.description || "";
+            document.getElementById("certModalMeta").innerHTML =
+                certCategoryBadge(c.category) +
+                (c.date ? ` <span class="badge badge-cat">${c.date.replace("-", " / ")}</span>` : "");
+            const img = document.getElementById("certModalImg");
+            const wrap = document.getElementById("certModalImgWrap");
+            if (c.imageUrl) { img.src = c.imageUrl; img.alt = c.title; wrap.style.display = "block"; }
+            else { wrap.style.display = "none"; }
+            const acts = document.getElementById("certModalActions");
+            acts.innerHTML = c.credentialUrl
+                ? `<a href="${c.credentialUrl}" target="_blank" rel="noopener" class="action-link">Verify credential ↗</a>`
+                : "";
+            document.getElementById("certModalBackdrop").classList.add("open");
+            document.body.style.overflow = "hidden";
+        }
+
+        document.getElementById("certModalClose").addEventListener("click", closeCertModal);
+        document.getElementById("certModalBackdrop").addEventListener("click", e => { if (e.target === e.currentTarget) closeCertModal(); });
+
+        function closeCertModal() {
+            document.getElementById("certModalBackdrop").classList.remove("open");
+            document.body.style.overflow = "";
+        }
+
+        // Close both modals on Escape
+        document.addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); closeCertModal(); } });
     </script>
 </body>
 
