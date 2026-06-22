@@ -259,7 +259,8 @@
                 renderAdminList();
             } catch (e) {
                 console.error("Error loading projects:", e);
-                list.innerHTML = `<p class="error-text">Could not load projects.</p>`;
+                alert("Error: " + e.message);
+                list.innerHTML = `<p class="error-text">${e.message}</p>`;
             }
         }
 
