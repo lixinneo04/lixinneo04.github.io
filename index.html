@@ -7,7 +7,8 @@
     <title>My Portfolio</title>
     <link rel="stylesheet" href="style.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap"
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500;600&display=swap"
         rel="stylesheet" />
 </head>
 
@@ -602,6 +603,80 @@
 
         // Close ALL modals on Escape
         document.addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); closeCertModal(); closeVisitModal(); closeCompModal(); } });
+    </script>
+
+    <!-- Scroll-reveal & nav active highlight -->
+    <script>
+        // ── Scroll-reveal ────────────────────────────────────────────────────────
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry, i) => {
+                if (entry.isIntersecting) {
+                    // Stagger sibling cards
+                    const delay = entry.target.dataset.revealDelay || 0;
+                    entry.target.style.transitionDelay = delay + "ms";
+                    entry.target.classList.add("visible");
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1, rootMargin: "0px 0px -40px 0px" });
+
+        function revealSection(el) {
+            el.classList.add("reveal");
+            revealObserver.observe(el);
+        }
+
+        // Observe section headings and sections
+        document.querySelectorAll(".certs-section, .section-heading, .filter-bar, .hero").forEach(el => {
+            revealSection(el);
+        });
+
+        // Stagger cards when added to DOM — use MutationObserver on grids
+        function staggerReveal(grid) {
+            const observer = new MutationObserver(() => {
+                const cards = grid.querySelectorAll(
+                    ".cert-card:not(.reveal), .project-card:not(.reveal)"
+                );
+                cards.forEach((card, i) => {
+                    card.classList.add("reveal");
+                    card.dataset.revealDelay = i * 60;
+                    revealObserver.observe(card);
+                });
+            });
+            observer.observe(grid, { childList: true });
+        }
+
+        ["projectGrid", "certGrid", "visitGrid", "compGrid"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) staggerReveal(el);
+        });
+
+        // ── Nav active-section highlight ─────────────────────────────────────────
+        const navLinks = document.querySelectorAll(".nav-links a");
+        const sectionIds = ["about", "work", "certifications", "industry-visits", "competitions"];
+
+        const sectionObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.id;
+                    navLinks.forEach(a => {
+                        a.style.background = "";
+                        a.style.color = "";
+                        a.style.fontWeight = "";
+                    });
+                    const active = document.querySelector(`.nav-links a[href="#${id}"]`);
+                    if (active) {
+                        active.style.background = "var(--accent-light)";
+                        active.style.color = "var(--accent)";
+                        active.style.fontWeight = "600";
+                    }
+                }
+            });
+        }, { threshold: 0.3 });
+
+        sectionIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) sectionObserver.observe(el);
+        });
     </script>
 </body>
 
