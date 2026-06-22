@@ -318,6 +318,11 @@ a {
     color: var(--ink-muted);
 }
 
+.badge-course {
+    background: #ecfdf5;
+    color: #065f46;
+}
+
 .card-body h3 {
     font-size: 15px;
     font-weight: 500;

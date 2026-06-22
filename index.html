@@ -123,11 +123,17 @@
         }
 
         function buildFilters() {
-            const years = [...new Set(allProjects.map(p => p.year))].sort();
+            // Collect all distinct semesters in canonical order
+            const semesterOrder = [
+                "Year 1 Semester 1", "Year 1 Semester 2",
+                "Year 2 Semester 1", "Year 2 Semester 2",
+                "Year 3 Semester 1", "Year 3 Semester 2"
+            ];
+            const usedSemesters = semesterOrder.filter(s => allProjects.some(p => p.year === s));
             const cats = [...new Set(allProjects.map(p => p.category).filter(Boolean))];
             const chips = document.getElementById("filterChips");
             chips.innerHTML = `<button class="chip active" data-filter="all">All</button>`;
-            years.forEach(y => chips.innerHTML += `<button class="chip" data-filter="year:${y}">${y}</button>`);
+            usedSemesters.forEach(s => chips.innerHTML += `<button class="chip" data-filter="year:${s}">${s}</button>`);
             cats.forEach(c => chips.innerHTML += `<button class="chip" data-filter="cat:${c}">${c}</button>`);
             chips.querySelectorAll(".chip").forEach(btn => {
                 btn.addEventListener("click", () => {
@@ -143,9 +149,14 @@
         }
 
         function buildYearTrack() {
-            const years = [...new Set(allProjects.map(p => p.year))].sort();
+            const semesterOrder = [
+                "Year 1 Semester 1", "Year 1 Semester 2",
+                "Year 2 Semester 1", "Year 2 Semester 2",
+                "Year 3 Semester 1", "Year 3 Semester 2"
+            ];
+            const semesters = semesterOrder.filter(s => allProjects.some(p => p.year === s));
             const track = document.getElementById("heroYearTrack");
-            track.innerHTML = years.map(y => `<span>${y}</span>`).join("");
+            track.innerHTML = semesters.map(s => `<span>${s}</span>`).join("");
         }
 
         function renderGrid(projects) {
@@ -162,10 +173,11 @@
           <div class="card-body">
             <div class="card-meta">
               <span class="badge badge-year">${p.year}</span>
+              ${p.courseName ? `<span class="badge badge-course">${p.courseName}</span>` : ""}
               ${p.category ? `<span class="badge badge-cat">${p.category}</span>` : ""}
             </div>
             <h3>${p.title}</h3>
-            <p>${p.description ? (p.description.length > 90 ? p.description.slice(0, 90) + "…" : p.description) : ""}</p>
+            <p>${p.description ? (p.description.length > 90 ? p.description.slice(0, 90) + "\u2026" : p.description) : ""}</p>
           </div>
         </article>
       `).join("");
@@ -183,6 +195,7 @@
             document.getElementById("modalDesc").textContent = p.description || "";
             document.getElementById("modalMeta").innerHTML = `
         <span class="badge badge-year">${p.year}</span>
+        ${p.courseName ? `<span class="badge badge-course">${p.courseName}</span>` : ""}
         ${p.category ? `<span class="badge badge-cat">${p.category}</span>` : ""}
       `;
             const img = document.getElementById("modalImg");

@@ -97,17 +97,24 @@
                         <input type="text" id="fTitle" placeholder="e.g. Smart Campus Navigation App" />
                     </div>
                     <div class="field field-sm">
-                        <label>Year <span class="req">*</span></label>
+                        <label>Year &amp; Semester <span class="req">*</span></label>
                         <select id="fYear">
-                            <option value="Year 1">Year 1</option>
-                            <option value="Year 2">Year 2</option>
-                            <option value="Year 3" selected>Year 3</option>
+                            <option value="Year 1 Semester 1">Year 1 Semester 1</option>
+                            <option value="Year 1 Semester 2">Year 1 Semester 2</option>
+                            <option value="Year 2 Semester 1">Year 2 Semester 1</option>
+                            <option value="Year 2 Semester 2">Year 2 Semester 2</option>
+                            <option value="Year 3 Semester 1">Year 3 Semester 1</option>
+                            <option value="Year 3 Semester 2" selected>Year 3 Semester 2</option>
                         </select>
                     </div>
                 </div>
                 <div class="field">
-                    <label>Category</label>
-                    <input type="text" id="fCat" placeholder="e.g. Machine Learning, Web Dev, UI/UX…" />
+                    <label>Course Name</label>
+                    <input type="text" id="fCourse" placeholder="e.g. Introduction to Programming, Data Structures…" />
+                </div>
+                <div class="field">
+                    <label>Category / Type</label>
+                    <input type="text" id="fCat" placeholder="e.g. Assignment, Project, Lab…" />
                 </div>
                 <div class="field">
                     <label>Description</label>
@@ -255,7 +262,7 @@
           </div>
           <div class="admin-project-info">
             <strong>${p.title}</strong>
-            <span>${p.year}${p.category ? " · " + p.category : ""}</span>
+            <span>${p.year}${p.courseName ? " · " + p.courseName : ""}${p.category ? " · " + p.category : ""}</span>
           </div>
           <div class="admin-project-actions">
             <button class="btn-ghost edit-btn" data-id="${p.id}">Edit</button>
@@ -276,7 +283,8 @@
             const p = id ? projects.find(x => x.id === id) : null;
             document.getElementById("projectModalTitle").textContent = id ? "Edit project" : "Add project";
             document.getElementById("fTitle").value = p?.title || "";
-            document.getElementById("fYear").value = p?.year || "Year 3";
+            document.getElementById("fYear").value = p?.year || "Year 3 Semester 2";
+            document.getElementById("fCourse").value = p?.courseName || "";
             document.getElementById("fCat").value = p?.category || "";
             document.getElementById("fDesc").value = p?.description || "";
             document.getElementById("fGithub").value = p?.github || "";
@@ -342,6 +350,7 @@
                 const data = {
                     title,
                     year: document.getElementById("fYear").value,
+                    courseName: document.getElementById("fCourse").value.trim(),
                     category: document.getElementById("fCat").value.trim(),
                     description: document.getElementById("fDesc").value.trim(),
                     github: document.getElementById("fGithub").value.trim(),
