@@ -1,0 +1,7 @@
+# ── Sensitive config (never commit) ─────────────────────────────────────────
+config.js
+
+# ── OS / editor junk ─────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
