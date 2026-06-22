@@ -18,6 +18,8 @@
         <div class="nav-links">
             <a href="#work">Work</a>
             <a href="#certifications">Certifications</a>
+            <a href="#industry-visits">Industry Visits</a>
+            <a href="#competitions">Competitions</a>
             <a href="#about">About</a>
         </div>
     </nav>
@@ -79,6 +81,66 @@
         </div>
     </div>
 
+    <!-- Industry Visits section -->
+    <section class="certs-section" id="industry-visits">
+        <div class="container">
+            <div class="section-heading">
+                <h2>Industry Visits</h2>
+                <p class="section-sub">Company tours &amp; professional exposure</p>
+            </div>
+            <div class="cert-grid" id="visitGrid">
+                <div class="empty-state"><p>No industry visits yet.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Industry Visit detail modal -->
+    <div class="modal-backdrop" id="visitModalBackdrop">
+        <div class="modal cert-detail-modal" role="dialog" aria-modal="true">
+            <button class="modal-close" id="visitPublicModalClose" aria-label="Close">&#x2715;</button>
+            <div class="modal-img-wrap" id="visitModalImgWrap">
+                <img id="visitModalImg" src="" alt="" />
+            </div>
+            <div class="modal-body">
+                <div class="modal-meta" id="visitModalMeta"></div>
+                <h2 class="modal-title" id="visitModalTitle"></h2>
+                <p class="cert-modal-issuer" id="visitModalCompany"></p>
+                <p class="modal-desc" id="visitModalDesc"></p>
+                <div class="modal-actions" id="visitModalActions"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Competitions section -->
+    <section class="certs-section" id="competitions">
+        <div class="container">
+            <div class="section-heading">
+                <h2>Competitions</h2>
+                <p class="section-sub">Hackathons, programming contests &amp; challenges</p>
+            </div>
+            <div class="cert-grid" id="compGrid">
+                <div class="empty-state"><p>No competitions yet.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Competition detail modal -->
+    <div class="modal-backdrop" id="compModalBackdrop">
+        <div class="modal cert-detail-modal" role="dialog" aria-modal="true">
+            <button class="modal-close" id="compPublicModalClose" aria-label="Close">&#x2715;</button>
+            <div class="modal-img-wrap" id="compModalImgWrap">
+                <img id="compModalImg" src="" alt="" />
+            </div>
+            <div class="modal-body">
+                <div class="modal-meta" id="compModalMeta"></div>
+                <h2 class="modal-title" id="compModalTitle"></h2>
+                <p class="cert-modal-issuer" id="compModalOrganiser"></p>
+                <p class="modal-desc" id="compModalDesc"></p>
+                <div class="modal-actions" id="compModalActions"></div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-backdrop" id="modalBackdrop">
         <div class="modal" role="dialog" aria-modal="true">
             <button class="modal-close" id="modalClose" aria-label="Close">&#x2715;</button>
@@ -133,6 +195,8 @@
         const db = getFirestore(app);
         let allProjects = [];
         let allCerts = [];
+        let allVisits = [];
+        let allComps = [];
 
         async function loadProfile() {
             try {
@@ -317,6 +381,8 @@
         loadProfile();
         loadProjects();
         loadCerts();
+        loadVisits();
+        loadComps();
 
         // ─────────────────────────────────────────────────────────────────────────
         // CERTIFICATIONS
@@ -327,9 +393,7 @@
                 allCerts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 allCerts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                 renderCerts();
-            } catch (e) {
-                console.error("Certs error:", e);
-            }
+            } catch (e) { console.error("Certs error:", e); }
         }
 
         const CERT_CATEGORY_COLORS = {
@@ -347,22 +411,14 @@
 
         function renderCerts() {
             const grid = document.getElementById("certGrid");
-            if (!allCerts.length) {
-                grid.innerHTML = `<div class="empty-state"><p>No certifications yet.</p></div>`;
-                return;
-            }
+            if (!allCerts.length) { grid.innerHTML = `<div class="empty-state"><p>No certifications yet.</p></div>`; return; }
             grid.innerHTML = allCerts.map(c => `
                 <article class="cert-card" data-id="${c.id}" tabindex="0" role="button" aria-label="View ${c.title}">
                     <div class="cert-card-img">
-                        ${c.imageUrl
-                            ? `<img src="${c.imageUrl}" alt="${c.title}" loading="lazy" />`
-                            : `<div class="cert-img-placeholder">🏅</div>`}
+                        ${c.imageUrl ? `<img src="${c.imageUrl}" alt="${c.title}" loading="lazy" />` : `<div class="cert-img-placeholder">🏅</div>`}
                     </div>
                     <div class="cert-card-body">
-                        <div class="card-meta">
-                            ${certCategoryBadge(c.category)}
-                            ${c.date ? `<span class="badge badge-cat">${c.date.replace("-", " / ")}</span>` : ""}
-                        </div>
+                        <div class="card-meta">${certCategoryBadge(c.category)}${c.date ? `<span class="badge badge-cat">${c.date.replace("-", " / ")}</span>` : ""}</div>
                         <h3>${c.title}</h3>
                         <p class="cert-issuer">${c.issuer || ""}</p>
                     </div>
@@ -388,23 +444,164 @@
             if (c.imageUrl) { img.src = c.imageUrl; img.alt = c.title; wrap.style.display = "block"; }
             else { wrap.style.display = "none"; }
             const acts = document.getElementById("certModalActions");
-            acts.innerHTML = c.credentialUrl
-                ? `<a href="${c.credentialUrl}" target="_blank" rel="noopener" class="action-link">Verify credential ↗</a>`
-                : "";
+            acts.innerHTML = c.credentialUrl ? `<a href="${c.credentialUrl}" target="_blank" rel="noopener" class="action-link">Verify credential ↗</a>` : "";
             document.getElementById("certModalBackdrop").classList.add("open");
             document.body.style.overflow = "hidden";
         }
 
         document.getElementById("certModalClose").addEventListener("click", closeCertModal);
         document.getElementById("certModalBackdrop").addEventListener("click", e => { if (e.target === e.currentTarget) closeCertModal(); });
+        function closeCertModal() { document.getElementById("certModalBackdrop").classList.remove("open"); document.body.style.overflow = ""; }
 
-        function closeCertModal() {
-            document.getElementById("certModalBackdrop").classList.remove("open");
-            document.body.style.overflow = "";
+        // ─────────────────────────────────────────────────────────────────────────
+        // INDUSTRY VISITS
+        // ─────────────────────────────────────────────────────────────────────────
+        const VISIT_INDUSTRY_COLORS = {
+            "Technology":    { bg: "#dbeafe", color: "#1e40af" },
+            "Finance":       { bg: "#dcfce7", color: "#166534" },
+            "Healthcare":    { bg: "#fce7f3", color: "#9d174d" },
+            "Manufacturing": { bg: "#fef9c3", color: "#854d0e" },
+            "Retail":        { bg: "#ede9fe", color: "#5b21b6" },
+            "Government":    { bg: "#f1f5f9", color: "#334155" },
+            "Education":     { bg: "#fef3c7", color: "#92400e" },
+            "Other":         { bg: "#f1f5f9", color: "#475569" },
+        };
+
+        function visitBadge(cat) {
+            const s = VISIT_INDUSTRY_COLORS[cat] || VISIT_INDUSTRY_COLORS["Other"];
+            return `<span class="badge" style="background:${s.bg};color:${s.color}">${cat || "Visit"}</span>`;
         }
 
-        // Close both modals on Escape
-        document.addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); closeCertModal(); } });
+        async function loadVisits() {
+            try {
+                const snap = await getDocs(collection(db, "industryVisits"));
+                allVisits = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                allVisits.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                renderVisits();
+            } catch (e) { console.error("Visits error:", e); }
+        }
+
+        function renderVisits() {
+            const grid = document.getElementById("visitGrid");
+            if (!allVisits.length) { grid.innerHTML = `<div class="empty-state"><p>No industry visits yet.</p></div>`; return; }
+            grid.innerHTML = allVisits.map(v => `
+                <article class="cert-card" data-id="${v.id}" tabindex="0" role="button" aria-label="${v.title}">
+                    <div class="cert-card-img">
+                        ${v.imageUrl ? `<img src="${v.imageUrl}" alt="${v.title}" loading="lazy" />` : `<div class="cert-img-placeholder">🏭</div>`}
+                    </div>
+                    <div class="cert-card-body">
+                        <div class="card-meta">${visitBadge(v.category)}${v.date ? `<span class="badge badge-cat">${v.date}</span>` : ""}</div>
+                        <h3>${v.title}</h3>
+                        <p class="cert-issuer">${v.company || ""}${v.location ? " · " + v.location : ""}</p>
+                    </div>
+                </article>`).join("");
+            grid.querySelectorAll(".cert-card").forEach(card => {
+                const open = () => openVisitModal(card.dataset.id);
+                card.addEventListener("click", open);
+                card.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") open(); });
+            });
+        }
+
+        function openVisitModal(id) {
+            const v = allVisits.find(x => x.id === id);
+            if (!v) return;
+            document.getElementById("visitModalTitle").textContent = v.title;
+            document.getElementById("visitModalCompany").textContent = [v.company, v.location].filter(Boolean).join(" · ");
+            document.getElementById("visitModalDesc").textContent = v.description || "";
+            document.getElementById("visitModalMeta").innerHTML =
+                visitBadge(v.category) + (v.date ? ` <span class="badge badge-cat">${v.date}</span>` : "");
+            const img = document.getElementById("visitModalImg");
+            const wrap = document.getElementById("visitModalImgWrap");
+            if (v.imageUrl) { img.src = v.imageUrl; img.alt = v.title; wrap.style.display = "block"; }
+            else { wrap.style.display = "none"; }
+            document.getElementById("visitModalActions").innerHTML = "";
+            document.getElementById("visitModalBackdrop").classList.add("open");
+            document.body.style.overflow = "hidden";
+        }
+
+        document.getElementById("visitPublicModalClose").addEventListener("click", closeVisitModal);
+        document.getElementById("visitModalBackdrop").addEventListener("click", e => { if (e.target === e.currentTarget) closeVisitModal(); });
+        function closeVisitModal() { document.getElementById("visitModalBackdrop").classList.remove("open"); document.body.style.overflow = ""; }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // COMPETITIONS
+        // ─────────────────────────────────────────────────────────────────────────
+        const COMP_CATEGORY_COLORS = {
+            "Competitive Programming": { bg: "#dbeafe", color: "#1e40af" },
+            "Hackathon":               { bg: "#fef9c3", color: "#854d0e" },
+            "Datathon":                { bg: "#dcfce7", color: "#166534" },
+            "AI / ML":                 { bg: "#ede9fe", color: "#5b21b6" },
+            "Cybersecurity":           { bg: "#fce7f3", color: "#9d174d" },
+            "Design":                  { bg: "#fef3c7", color: "#92400e" },
+            "Business Case":           { bg: "#f1f5f9", color: "#334155" },
+            "Other":                   { bg: "#f1f5f9", color: "#475569" },
+        };
+
+        function compBadge(cat) {
+            const s = COMP_CATEGORY_COLORS[cat] || COMP_CATEGORY_COLORS["Other"];
+            return `<span class="badge" style="background:${s.bg};color:${s.color}">${cat || "Competition"}</span>`;
+        }
+
+        async function loadComps() {
+            try {
+                const snap = await getDocs(collection(db, "competitions"));
+                allComps = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                allComps.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                renderComps();
+            } catch (e) { console.error("Comps error:", e); }
+        }
+
+        function renderComps() {
+            const grid = document.getElementById("compGrid");
+            if (!allComps.length) { grid.innerHTML = `<div class="empty-state"><p>No competitions yet.</p></div>`; return; }
+            grid.innerHTML = allComps.map(c => `
+                <article class="cert-card" data-id="${c.id}" tabindex="0" role="button" aria-label="${c.title}">
+                    <div class="cert-card-img">
+                        ${c.imageUrl ? `<img src="${c.imageUrl}" alt="${c.title}" loading="lazy" />` : `<div class="cert-img-placeholder">🏆</div>`}
+                    </div>
+                    <div class="cert-card-body">
+                        <div class="card-meta">
+                            ${compBadge(c.category)}
+                            ${c.result ? `<span class="badge comp-result-badge">${c.result}</span>` : ""}
+                            ${c.date ? `<span class="badge badge-cat">${c.date.replace("-", " / ")}</span>` : ""}
+                        </div>
+                        <h3>${c.title}</h3>
+                        <p class="cert-issuer">${c.organiser || ""}${c.teamName ? " · " + c.teamName : ""}</p>
+                    </div>
+                </article>`).join("");
+            grid.querySelectorAll(".cert-card").forEach(card => {
+                const open = () => openCompModal(card.dataset.id);
+                card.addEventListener("click", open);
+                card.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") open(); });
+            });
+        }
+
+        function openCompModal(id) {
+            const c = allComps.find(x => x.id === id);
+            if (!c) return;
+            document.getElementById("compModalTitle").textContent = c.title;
+            document.getElementById("compModalOrganiser").textContent = [c.organiser, c.teamName].filter(Boolean).join(" · ");
+            document.getElementById("compModalDesc").textContent = c.description || "";
+            document.getElementById("compModalMeta").innerHTML =
+                compBadge(c.category) +
+                (c.result ? ` <span class="badge comp-result-badge">${c.result}</span>` : "") +
+                (c.date ? ` <span class="badge badge-cat">${c.date.replace("-", " / ")}</span>` : "");
+            const img = document.getElementById("compModalImg");
+            const wrap = document.getElementById("compModalImgWrap");
+            if (c.imageUrl) { img.src = c.imageUrl; img.alt = c.title; wrap.style.display = "block"; }
+            else { wrap.style.display = "none"; }
+            const acts = document.getElementById("compModalActions");
+            acts.innerHTML = c.url ? `<a href="${c.url}" target="_blank" rel="noopener" class="action-link">View results ↗</a>` : "";
+            document.getElementById("compModalBackdrop").classList.add("open");
+            document.body.style.overflow = "hidden";
+        }
+
+        document.getElementById("compPublicModalClose").addEventListener("click", closeCompModal);
+        document.getElementById("compModalBackdrop").addEventListener("click", e => { if (e.target === e.currentTarget) closeCompModal(); });
+        function closeCompModal() { document.getElementById("compModalBackdrop").classList.remove("open"); document.body.style.overflow = ""; }
+
+        // Close ALL modals on Escape
+        document.addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); closeCertModal(); closeVisitModal(); closeCompModal(); } });
     </script>
 </body>
 

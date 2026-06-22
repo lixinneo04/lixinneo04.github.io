@@ -91,6 +91,26 @@
                     <p class="loading-text">Loading…</p>
                 </div>
             </section>
+
+            <section class="admin-section">
+                <div class="section-header">
+                    <h2>Industry Visits</h2>
+                    <button class="btn-primary" id="openAddVisitBtn">+ Add visit</button>
+                </div>
+                <div id="adminVisitList" class="admin-project-list">
+                    <p class="loading-text">Loading…</p>
+                </div>
+            </section>
+
+            <section class="admin-section">
+                <div class="section-header">
+                    <h2>Competitions</h2>
+                    <button class="btn-primary" id="openAddCompBtn">+ Add competition</button>
+                </div>
+                <div id="adminCompList" class="admin-project-list">
+                    <p class="loading-text">Loading…</p>
+                </div>
+            </section>
         </div>
     </div>
 
@@ -238,6 +258,148 @@
         </div>
     </div>
 
+    <!-- Industry Visits modal -->
+    <div class="modal-backdrop" id="visitModal">
+        <div class="modal modal-wide" role="dialog" aria-modal="true">
+            <div class="modal-header">
+                <h2 id="visitModalTitle">Add industry visit</h2>
+                <button class="modal-close" id="visitModalClose" aria-label="Close">&#x2715;</button>
+            </div>
+            <div class="modal-body admin-modal-body">
+                <div class="field-row">
+                    <div class="field">
+                        <label>Title <span class="req">*</span></label>
+                        <input type="text" id="vTitle" placeholder="e.g. Google Malaysia Office Visit" />
+                    </div>
+                    <div class="field field-sm">
+                        <label>Industry <span class="req">*</span></label>
+                        <select id="vCategory">
+                            <option value="Technology">Technology</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Healthcare">Healthcare</option>
+                            <option value="Manufacturing">Manufacturing</option>
+                            <option value="Retail">Retail</option>
+                            <option value="Government">Government</option>
+                            <option value="Education">Education</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label>Company / Organisation <span class="req">*</span></label>
+                        <input type="text" id="vCompany" placeholder="e.g. Google, Maybank, Ministry of Health" />
+                    </div>
+                    <div class="field field-sm">
+                        <label>Date</label>
+                        <input type="date" id="vDate" />
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Location</label>
+                    <input type="text" id="vLocation" placeholder="e.g. Kuala Lumpur, Penang" />
+                </div>
+                <div class="field">
+                    <label>Description</label>
+                    <textarea id="vDesc" rows="3" placeholder="What did you learn or observe during this visit?"></textarea>
+                </div>
+                <div class="field">
+                    <label>Photo</label>
+                    <div class="upload-zone" id="visitUploadZone">
+                        <input type="file" id="vImgInput" accept="image/*" />
+                        <p>Upload a photo from the visit</p>
+                        <span class="upload-hint">JPG, PNG, WebP &middot; max 5 MB</span>
+                    </div>
+                    <div id="vImgPreviewWrap" style="display:none;margin-top:10px">
+                        <img id="vImgPreview" style="max-height:180px;border-radius:8px;border:1px solid #eee" alt="Preview" />
+                        <button class="btn-ghost" id="removeVisitImgBtn" style="margin-left:10px;font-size:13px">Remove</button>
+                    </div>
+                </div>
+                <div id="visitStatus" class="status-msg"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" id="cancelVisitBtn">Cancel</button>
+                <button class="btn-primary" id="saveVisitBtn">Save visit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Competitions modal -->
+    <div class="modal-backdrop" id="compModal">
+        <div class="modal modal-wide" role="dialog" aria-modal="true">
+            <div class="modal-header">
+                <h2 id="compModalTitle">Add competition</h2>
+                <button class="modal-close" id="compModalClose" aria-label="Close">&#x2715;</button>
+            </div>
+            <div class="modal-body admin-modal-body">
+                <div class="field-row">
+                    <div class="field">
+                        <label>Title <span class="req">*</span></label>
+                        <input type="text" id="coTitle" placeholder="e.g. ICPC Asia Regional 2024, Hack&Roll" />
+                    </div>
+                    <div class="field field-sm">
+                        <label>Category <span class="req">*</span></label>
+                        <select id="coCategory">
+                            <option value="Competitive Programming">Competitive Programming</option>
+                            <option value="Hackathon">Hackathon</option>
+                            <option value="Datathon">Datathon</option>
+                            <option value="AI / ML">AI / ML</option>
+                            <option value="Cybersecurity">Cybersecurity</option>
+                            <option value="Design">Design</option>
+                            <option value="Business Case">Business Case</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label>Organiser <span class="req">*</span></label>
+                        <input type="text" id="coOrganiser" placeholder="e.g. ICPC Foundation, MLH, Google" />
+                    </div>
+                    <div class="field field-sm">
+                        <label>Date</label>
+                        <input type="month" id="coDate" />
+                    </div>
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label>Result / Placement</label>
+                        <input type="text" id="coResult" placeholder="e.g. 1st Place, Bronze, Top 10, Finalist" />
+                    </div>
+                    <div class="field">
+                        <label>Team Name</label>
+                        <input type="text" id="coTeam" placeholder="e.g. Team Alpha" />
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Description</label>
+                    <textarea id="coDesc" rows="3" placeholder="What did you build or solve? What was the experience like?"></textarea>
+                </div>
+                <div class="field">
+                    <label>Photo / Poster</label>
+                    <div class="upload-zone" id="compUploadZone">
+                        <input type="file" id="coImgInput" accept="image/*" />
+                        <p>Upload a team photo or competition poster</p>
+                        <span class="upload-hint">JPG, PNG, WebP &middot; max 5 MB</span>
+                    </div>
+                    <div id="coImgPreviewWrap" style="display:none;margin-top:10px">
+                        <img id="coImgPreview" style="max-height:180px;border-radius:8px;border:1px solid #eee" alt="Preview" />
+                        <button class="btn-ghost" id="removeCompImgBtn" style="margin-left:10px;font-size:13px">Remove</button>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Competition / Results URL</label>
+                    <input type="url" id="coUrl" placeholder="https://…" />
+                </div>
+                <div id="compStatus" class="status-msg"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" id="cancelCompBtn">Cancel</button>
+                <button class="btn-primary" id="saveCompBtn">Save competition</button>
+            </div>
+        </div>
+    </div>
+
     <script src="config.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -291,6 +453,8 @@
                 loadProfile();
                 loadProjects();
                 loadCerts();
+                loadVisits();
+                loadComps();
             } else {
                 document.getElementById("loginScreen").style.display = "flex";
                 document.getElementById("adminDash").style.display = "none";
@@ -711,6 +875,200 @@
                 await deleteDoc(doc(db, "certifications", id));
                 await loadCerts();
             } catch (e) { alert("Could not delete: " + e.message); }
+        }
+
+        // ═════════════════════════════════════════════════════════════════════════
+        // INDUSTRY VISITS
+        // ═════════════════════════════════════════════════════════════════════════
+        let visits = [], editingVisitId = null, pendingVisitImg = null, existingVisitImg = null;
+
+        async function loadVisits() {
+            const list = document.getElementById("adminVisitList");
+            list.innerHTML = `<p class="loading-text">Loading…</p>`;
+            try {
+                const snap = await getDocs(collection(db, "industryVisits"));
+                visits = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                visits.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                renderVisitList();
+            } catch (e) { list.innerHTML = `<p class="error-text">${e.message}</p>`; }
+        }
+
+        function renderVisitList() {
+            const list = document.getElementById("adminVisitList");
+            if (!visits.length) { list.innerHTML = `<div class="empty-state"><p>No industry visits yet.</p></div>`; return; }
+            list.innerHTML = visits.map(v => `
+                <div class="admin-project-row">
+                    <div class="admin-project-thumb">
+                        ${v.imageUrl ? `<img src="${v.imageUrl}" alt="" />` : `<div class="thumb-placeholder cert-thumb-icon">🏭</div>`}
+                    </div>
+                    <div class="admin-project-info">
+                        <strong>${v.title}</strong>
+                        <span>${v.company || ""}${v.category ? " · " + v.category : ""}${v.date ? " · " + v.date : ""}</span>
+                    </div>
+                    <div class="admin-project-actions">
+                        <button class="btn-ghost edit-visit-btn" data-id="${v.id}">Edit</button>
+                        <button class="btn-danger delete-visit-btn" data-id="${v.id}">Delete</button>
+                    </div>
+                </div>`).join("");
+            list.querySelectorAll(".edit-visit-btn").forEach(b => b.addEventListener("click", () => openVisitModal(b.dataset.id)));
+            list.querySelectorAll(".delete-visit-btn").forEach(b => b.addEventListener("click", () => deleteVisit(b.dataset.id)));
+        }
+
+        function openVisitModal(id) {
+            editingVisitId = id || null; pendingVisitImg = null; existingVisitImg = null;
+            const v = id ? visits.find(x => x.id === id) : null;
+            document.getElementById("visitModalTitle").textContent = id ? "Edit industry visit" : "Add industry visit";
+            document.getElementById("vTitle").value = v?.title || "";
+            document.getElementById("vCategory").value = v?.category || "Technology";
+            document.getElementById("vCompany").value = v?.company || "";
+            document.getElementById("vDate").value = v?.date || "";
+            document.getElementById("vLocation").value = v?.location || "";
+            document.getElementById("vDesc").value = v?.description || "";
+            document.getElementById("vImgInput").value = "";
+            document.getElementById("visitStatus").textContent = "";
+            if (v?.imageUrl) { existingVisitImg = v.imageUrl; document.getElementById("vImgPreview").src = v.imageUrl; document.getElementById("vImgPreviewWrap").style.display = "block"; }
+            else { document.getElementById("vImgPreviewWrap").style.display = "none"; document.getElementById("vImgPreview").src = ""; }
+            document.getElementById("visitModal").classList.add("open");
+            document.body.style.overflow = "hidden";
+        }
+
+        function closeVisitModal() { document.getElementById("visitModal").classList.remove("open"); document.body.style.overflow = ""; }
+
+        document.getElementById("openAddVisitBtn").addEventListener("click", () => openVisitModal(null));
+        document.getElementById("visitModalClose").addEventListener("click", closeVisitModal);
+        document.getElementById("cancelVisitBtn").addEventListener("click", closeVisitModal);
+        document.getElementById("visitModal").addEventListener("click", e => { if (e.target === e.currentTarget) closeVisitModal(); });
+
+        document.getElementById("vImgInput").addEventListener("change", e => {
+            const f = e.target.files[0]; if (!f) return;
+            if (f.size > 5*1024*1024) { alert("Image must be under 5 MB."); return; }
+            pendingVisitImg = f;
+            const r = new FileReader(); r.onload = ev => { document.getElementById("vImgPreview").src = ev.target.result; document.getElementById("vImgPreviewWrap").style.display = "block"; }; r.readAsDataURL(f);
+        });
+        document.getElementById("removeVisitImgBtn").addEventListener("click", () => { pendingVisitImg = null; existingVisitImg = null; document.getElementById("vImgInput").value = ""; document.getElementById("vImgPreview").src = ""; document.getElementById("vImgPreviewWrap").style.display = "none"; });
+
+        document.getElementById("saveVisitBtn").addEventListener("click", async () => {
+            const title = document.getElementById("vTitle").value.trim();
+            const company = document.getElementById("vCompany").value.trim();
+            if (!title) { document.getElementById("vTitle").focus(); return; }
+            if (!company) { document.getElementById("vCompany").focus(); return; }
+            const btn = document.getElementById("saveVisitBtn");
+            btn.disabled = true; btn.textContent = "Saving…";
+            showStatus("visitStatus", "Saving…", "info");
+            try {
+                let imageUrl = existingVisitImg || null;
+                if (pendingVisitImg) { showStatus("visitStatus", "Uploading photo…", "info"); imageUrl = await uploadToCloudinary(pendingVisitImg); }
+                const data = { title, company, category: document.getElementById("vCategory").value, date: document.getElementById("vDate").value, location: document.getElementById("vLocation").value.trim(), description: document.getElementById("vDesc").value.trim(), imageUrl };
+                if (editingVisitId) { await updateDoc(doc(db, "industryVisits", editingVisitId), data); }
+                else { data.createdAt = serverTimestamp(); await addDoc(collection(db, "industryVisits"), data); }
+                showStatus("visitStatus", "Saved ✓", "success");
+                await loadVisits(); setTimeout(closeVisitModal, 800);
+            } catch (e) { console.error(e); showStatus("visitStatus", "Error: " + e.message, "error"); }
+            finally { btn.disabled = false; btn.textContent = "Save visit"; }
+        });
+
+        async function deleteVisit(id) {
+            if (!confirm("Delete this visit? This cannot be undone.")) return;
+            try { await deleteDoc(doc(db, "industryVisits", id)); await loadVisits(); }
+            catch (e) { alert("Could not delete: " + e.message); }
+        }
+
+        // ═════════════════════════════════════════════════════════════════════════
+        // COMPETITIONS
+        // ═════════════════════════════════════════════════════════════════════════
+        let comps = [], editingCompId = null, pendingCompImg = null, existingCompImg = null;
+
+        async function loadComps() {
+            const list = document.getElementById("adminCompList");
+            list.innerHTML = `<p class="loading-text">Loading…</p>`;
+            try {
+                const snap = await getDocs(collection(db, "competitions"));
+                comps = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                comps.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                renderCompList();
+            } catch (e) { list.innerHTML = `<p class="error-text">${e.message}</p>`; }
+        }
+
+        function renderCompList() {
+            const list = document.getElementById("adminCompList");
+            if (!comps.length) { list.innerHTML = `<div class="empty-state"><p>No competitions yet.</p></div>`; return; }
+            list.innerHTML = comps.map(c => `
+                <div class="admin-project-row">
+                    <div class="admin-project-thumb">
+                        ${c.imageUrl ? `<img src="${c.imageUrl}" alt="" />` : `<div class="thumb-placeholder cert-thumb-icon">🏆</div>`}
+                    </div>
+                    <div class="admin-project-info">
+                        <strong>${c.title}</strong>
+                        <span>${c.organiser || ""}${c.category ? " · " + c.category : ""}${c.result ? " · " + c.result : ""}</span>
+                    </div>
+                    <div class="admin-project-actions">
+                        <button class="btn-ghost edit-comp-btn" data-id="${c.id}">Edit</button>
+                        <button class="btn-danger delete-comp-btn" data-id="${c.id}">Delete</button>
+                    </div>
+                </div>`).join("");
+            list.querySelectorAll(".edit-comp-btn").forEach(b => b.addEventListener("click", () => openCompModal(b.dataset.id)));
+            list.querySelectorAll(".delete-comp-btn").forEach(b => b.addEventListener("click", () => deleteComp(b.dataset.id)));
+        }
+
+        function openCompModal(id) {
+            editingCompId = id || null; pendingCompImg = null; existingCompImg = null;
+            const c = id ? comps.find(x => x.id === id) : null;
+            document.getElementById("compModalTitle").textContent = id ? "Edit competition" : "Add competition";
+            document.getElementById("coTitle").value = c?.title || "";
+            document.getElementById("coCategory").value = c?.category || "Hackathon";
+            document.getElementById("coOrganiser").value = c?.organiser || "";
+            document.getElementById("coDate").value = c?.date || "";
+            document.getElementById("coResult").value = c?.result || "";
+            document.getElementById("coTeam").value = c?.teamName || "";
+            document.getElementById("coDesc").value = c?.description || "";
+            document.getElementById("coUrl").value = c?.url || "";
+            document.getElementById("coImgInput").value = "";
+            document.getElementById("compStatus").textContent = "";
+            if (c?.imageUrl) { existingCompImg = c.imageUrl; document.getElementById("coImgPreview").src = c.imageUrl; document.getElementById("coImgPreviewWrap").style.display = "block"; }
+            else { document.getElementById("coImgPreviewWrap").style.display = "none"; document.getElementById("coImgPreview").src = ""; }
+            document.getElementById("compModal").classList.add("open");
+            document.body.style.overflow = "hidden";
+        }
+
+        function closeCompModal() { document.getElementById("compModal").classList.remove("open"); document.body.style.overflow = ""; }
+
+        document.getElementById("openAddCompBtn").addEventListener("click", () => openCompModal(null));
+        document.getElementById("compModalClose").addEventListener("click", closeCompModal);
+        document.getElementById("cancelCompBtn").addEventListener("click", closeCompModal);
+        document.getElementById("compModal").addEventListener("click", e => { if (e.target === e.currentTarget) closeCompModal(); });
+
+        document.getElementById("coImgInput").addEventListener("change", e => {
+            const f = e.target.files[0]; if (!f) return;
+            if (f.size > 5*1024*1024) { alert("Image must be under 5 MB."); return; }
+            pendingCompImg = f;
+            const r = new FileReader(); r.onload = ev => { document.getElementById("coImgPreview").src = ev.target.result; document.getElementById("coImgPreviewWrap").style.display = "block"; }; r.readAsDataURL(f);
+        });
+        document.getElementById("removeCompImgBtn").addEventListener("click", () => { pendingCompImg = null; existingCompImg = null; document.getElementById("coImgInput").value = ""; document.getElementById("coImgPreview").src = ""; document.getElementById("coImgPreviewWrap").style.display = "none"; });
+
+        document.getElementById("saveCompBtn").addEventListener("click", async () => {
+            const title = document.getElementById("coTitle").value.trim();
+            const organiser = document.getElementById("coOrganiser").value.trim();
+            if (!title) { document.getElementById("coTitle").focus(); return; }
+            if (!organiser) { document.getElementById("coOrganiser").focus(); return; }
+            const btn = document.getElementById("saveCompBtn");
+            btn.disabled = true; btn.textContent = "Saving…";
+            showStatus("compStatus", "Saving…", "info");
+            try {
+                let imageUrl = existingCompImg || null;
+                if (pendingCompImg) { showStatus("compStatus", "Uploading image…", "info"); imageUrl = await uploadToCloudinary(pendingCompImg); }
+                const data = { title, organiser, category: document.getElementById("coCategory").value, date: document.getElementById("coDate").value, result: document.getElementById("coResult").value.trim(), teamName: document.getElementById("coTeam").value.trim(), description: document.getElementById("coDesc").value.trim(), url: document.getElementById("coUrl").value.trim(), imageUrl };
+                if (editingCompId) { await updateDoc(doc(db, "competitions", editingCompId), data); }
+                else { data.createdAt = serverTimestamp(); await addDoc(collection(db, "competitions"), data); }
+                showStatus("compStatus", "Saved ✓", "success");
+                await loadComps(); setTimeout(closeCompModal, 800);
+            } catch (e) { console.error(e); showStatus("compStatus", "Error: " + e.message, "error"); }
+            finally { btn.disabled = false; btn.textContent = "Save competition"; }
+        });
+
+        async function deleteComp(id) {
+            if (!confirm("Delete this competition? This cannot be undone.")) return;
+            try { await deleteDoc(doc(db, "competitions", id)); await loadComps(); }
+            catch (e) { alert("Could not delete: " + e.message); }
         }
     </script>
 </body>

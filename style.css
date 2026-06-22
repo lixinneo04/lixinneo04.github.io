@@ -1101,4 +1101,13 @@ a {
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
-}
+}
+
+/* Competition result badge — gold accent to highlight placement */
+.comp-result-badge {
+    background: #fef3c7;
+    color: #92400e;
+    font-weight: 700;
+    border: 1px solid #fde68a;
+}
+
