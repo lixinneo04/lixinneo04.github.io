@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Portfolio</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+</head>
+
+<body>
+
+    <nav class="nav">
+        <span class="nav-logo" id="navName">Portfolio</span>
+        <div class="nav-links">
+            <a href="#work">Work</a>
+            <a href="#about">About</a>
+        </div>
+    </nav>
+
+    <header class="hero" id="about">
+        <div class="hero-year-track" id="heroYearTrack"></div>
+        <div class="container hero-content">
+            <p class="hero-eyebrow" id="heroEyebrow">University Portfolio</p>
+            <h1 class="hero-name" id="heroName">Your Name</h1>
+            <p class="hero-bio" id="heroBio">Add your bio via the admin panel.</p>
+            <div class="hero-links" id="heroLinks"></div>
+        </div>
+    </header>
+
+    <section class="filter-bar" id="work">
+        <div class="container filter-inner">
+            <span class="filter-label">Filter</span>
+            <div class="filter-chips" id="filterChips">
+                <button class="chip active" data-filter="all">All</button>
+            </div>
+        </div>
+    </section>
+
+    <main class="container project-section">
+        <div class="project-grid" id="projectGrid">
+            <div class="empty-state">
+                <p>No projects yet. <a href="admin.html">Add one →</a></p>
+            </div>
+        </div>
+    </main>
+
+    <div class="modal-backdrop" id="modalBackdrop">
+        <div class="modal" role="dialog" aria-modal="true">
+            <button class="modal-close" id="modalClose" aria-label="Close">&#x2715;</button>
+            <div class="modal-img-wrap">
+                <img id="modalImg" src="" alt="" />
+            </div>
+            <div class="modal-body">
+                <div class="modal-meta" id="modalMeta"></div>
+                <h2 class="modal-title" id="modalTitle"></h2>
+                <p class="modal-desc" id="modalDesc"></p>
+                <div class="modal-actions" id="modalActions"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <span id="footerName">Portfolio</span> · Built with Firebase
+        </div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        // ─── PASTE YOUR FIREBASE CONFIG HERE ───────────────────────────────────────
+        const firebaseConfig = {
+            apiKey: "AIzaSyAiWHgPTvvXTuOtRYm9qhy4oPEkPIkkegg",
+            authDomain: "my-eportfolio-8e1c7.firebaseapp.com",
+            projectId: "my-eportfolio-8e1c7",
+            storageBucket: "my-eportfolio-8e1c7.firebasestorage.app",
+            messagingSenderId: "230548434439",
+            appId: "1:230548434439:web:d4c91bb95af385616204a2",
+            measurementId: "G-08JY376XVE"
+        };
+        // ───────────────────────────────────────────────────────────────────────────
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        let allProjects = [];
+
+        async function loadProfile() {
+            try {
+                const snap = await getDoc(doc(db, "profile", "main"));
+                if (snap.exists()) {
+                    const p = snap.data();
+                    document.getElementById("navName").textContent = p.name || "Portfolio";
+                    document.getElementById("heroName").textContent = p.name || "Your Name";
+                    document.getElementById("heroEyebrow").textContent = p.tagline || "University Portfolio";
+                    document.getElementById("heroBio").textContent = p.bio || "";
+                    document.title = (p.name || "Portfolio") + " · ePortfolio";
+                    document.getElementById("footerName").textContent = p.name || "Portfolio";
+                    const linksEl = document.getElementById("heroLinks");
+                    linksEl.innerHTML = "";
+                    if (p.github) linksEl.innerHTML += `<a href="${p.github}" target="_blank" rel="noopener" class="hero-link">GitHub ↗</a>`;
+                    if (p.linkedin) linksEl.innerHTML += `<a href="${p.linkedin}" target="_blank" rel="noopener" class="hero-link">LinkedIn ↗</a>`;
+                    if (p.email) linksEl.innerHTML += `<a href="mailto:${p.email}" class="hero-link">Email ↗</a>`;
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadProjects() {
+            try {
+                const snap = await getDocs(collection(db, "projects"));
+                allProjects = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                allProjects.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                buildFilters();
+                renderGrid(allProjects);
+                buildYearTrack();
+            } catch (e) {
+                document.getElementById("projectGrid").innerHTML = `<div class="empty-state"><p>Could not load projects. Check your Firebase config.</p></div>`;
+            }
+        }
+
+        function buildFilters() {
+            const years = [...new Set(allProjects.map(p => p.year))].sort();
+            const cats = [...new Set(allProjects.map(p => p.category).filter(Boolean))];
+            const chips = document.getElementById("filterChips");
+            chips.innerHTML = `<button class="chip active" data-filter="all">All</button>`;
+            years.forEach(y => chips.innerHTML += `<button class="chip" data-filter="year:${y}">${y}</button>`);
+            cats.forEach(c => chips.innerHTML += `<button class="chip" data-filter="cat:${c}">${c}</button>`);
+            chips.querySelectorAll(".chip").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    chips.querySelectorAll(".chip").forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    const f = btn.dataset.filter;
+                    const filtered = f === "all" ? allProjects
+                        : f.startsWith("year:") ? allProjects.filter(p => p.year === f.slice(5))
+                            : allProjects.filter(p => p.category === f.slice(4));
+                    renderGrid(filtered);
+                });
+            });
+        }
+
+        function buildYearTrack() {
+            const years = [...new Set(allProjects.map(p => p.year))].sort();
+            const track = document.getElementById("heroYearTrack");
+            track.innerHTML = years.map(y => `<span>${y}</span>`).join("");
+        }
+
+        function renderGrid(projects) {
+            const grid = document.getElementById("projectGrid");
+            if (!projects.length) {
+                grid.innerHTML = `<div class="empty-state"><p>No projects match this filter.</p></div>`;
+                return;
+            }
+            grid.innerHTML = projects.map(p => `
+        <article class="project-card" data-id="${p.id}" tabindex="0" role="button" aria-label="View ${p.title}">
+          <div class="card-img">
+            ${p.imageUrl ? `<img src="${p.imageUrl}" alt="${p.title}" loading="lazy" />` : `<div class="card-img-placeholder"><span>${p.category || "Project"}</span></div>`}
+          </div>
+          <div class="card-body">
+            <div class="card-meta">
+              <span class="badge badge-year">${p.year}</span>
+              ${p.category ? `<span class="badge badge-cat">${p.category}</span>` : ""}
+            </div>
+            <h3>${p.title}</h3>
+            <p>${p.description ? (p.description.length > 90 ? p.description.slice(0, 90) + "…" : p.description) : ""}</p>
+          </div>
+        </article>
+      `).join("");
+            grid.querySelectorAll(".project-card").forEach(card => {
+                const open = () => openModal(card.dataset.id);
+                card.addEventListener("click", open);
+                card.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") open(); });
+            });
+        }
+
+        function openModal(id) {
+            const p = allProjects.find(x => x.id === id);
+            if (!p) return;
+            document.getElementById("modalTitle").textContent = p.title;
+            document.getElementById("modalDesc").textContent = p.description || "";
+            document.getElementById("modalMeta").innerHTML = `
+        <span class="badge badge-year">${p.year}</span>
+        ${p.category ? `<span class="badge badge-cat">${p.category}</span>` : ""}
+      `;
+            const img = document.getElementById("modalImg");
+            const imgWrap = document.querySelector(".modal-img-wrap");
+            if (p.imageUrl) { img.src = p.imageUrl; img.alt = p.title; imgWrap.style.display = "block"; }
+            else { imgWrap.style.display = "none"; }
+            const actions = document.getElementById("modalActions");
+            actions.innerHTML = "";
+            if (p.github) actions.innerHTML += `<a href="${p.github}" target="_blank" rel="noopener" class="action-link">GitHub ↗</a>`;
+            if (p.demo) actions.innerHTML += `<a href="${p.demo}" target="_blank" rel="noopener" class="action-link">Live demo ↗</a>`;
+            document.getElementById("modalBackdrop").classList.add("open");
+            document.body.style.overflow = "hidden";
+        }
+
+        document.getElementById("modalClose").addEventListener("click", closeModal);
+        document.getElementById("modalBackdrop").addEventListener("click", e => { if (e.target === e.currentTarget) closeModal(); });
+        document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+        function closeModal() {
+            document.getElementById("modalBackdrop").classList.remove("open");
+            document.body.style.overflow = "";
+        }
+
+        loadProfile();
+        loadProjects();
+    </script>
+</body>
+
+</html>

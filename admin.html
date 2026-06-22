@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin · Portfolio</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+</head>
+
+<body class="admin-body">
+
+    <div id="loginScreen" class="admin-login">
+        <div class="login-card">
+            <p class="login-eyebrow">Portfolio Admin</p>
+            <h1>Sign in</h1>
+            <p class="login-sub">Use your Google account to manage your portfolio.</p>
+            <button class="btn-primary" id="loginBtn">Sign in with Google</button>
+            <p class="login-back"><a href="index.html">← Back to portfolio</a></p>
+        </div>
+    </div>
+
+    <div id="adminDash" style="display:none">
+        <div class="admin-nav">
+            <a href="index.html" class="admin-nav-logo">← Portfolio</a>
+            <div style="display:flex;align-items:center;gap:12px">
+                <span class="admin-user" id="adminUser"></span>
+                <button class="btn-ghost" id="logoutBtn">Sign out</button>
+            </div>
+        </div>
+
+        <div class="admin-container">
+            <section class="admin-section">
+                <div class="section-header">
+                    <h2>Profile</h2>
+                    <button class="btn-secondary" id="saveProfileBtn">Save profile</button>
+                </div>
+                <div class="admin-form">
+                    <div class="field-row">
+                        <div class="field">
+                            <label>Your name</label>
+                            <input type="text" id="pName" placeholder="e.g. Alex Tan" />
+                        </div>
+                        <div class="field">
+                            <label>Tagline</label>
+                            <input type="text" id="pTagline"
+                                placeholder="e.g. Computer Science · NUS · Class of 2026" />
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>Bio</label>
+                        <textarea id="pBio" rows="3" placeholder="A short paragraph about yourself."></textarea>
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label>GitHub URL</label>
+                            <input type="url" id="pGithub" placeholder="https://github.com/yourname" />
+                        </div>
+                        <div class="field">
+                            <label>LinkedIn URL</label>
+                            <input type="url" id="pLinkedin" placeholder="https://linkedin.com/in/yourname" />
+                        </div>
+                        <div class="field">
+                            <label>Email</label>
+                            <input type="email" id="pEmail" placeholder="you@example.com" />
+                        </div>
+                    </div>
+                </div>
+                <div id="profileStatus" class="status-msg"></div>
+            </section>
+
+            <section class="admin-section">
+                <div class="section-header">
+                    <h2>Projects</h2>
+                    <button class="btn-primary" id="openAddBtn">+ Add project</button>
+                </div>
+                <div id="adminProjectList" class="admin-project-list">
+                    <p class="loading-text">Loading projects…</p>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="projectModal">
+        <div class="modal modal-wide" role="dialog" aria-modal="true">
+            <div class="modal-header">
+                <h2 id="projectModalTitle">Add project</h2>
+                <button class="modal-close" id="projectModalClose" aria-label="Close">&#x2715;</button>
+            </div>
+            <div class="modal-body admin-modal-body">
+                <div class="field-row">
+                    <div class="field">
+                        <label>Title <span class="req">*</span></label>
+                        <input type="text" id="fTitle" placeholder="e.g. Smart Campus Navigation App" />
+                    </div>
+                    <div class="field field-sm">
+                        <label>Year <span class="req">*</span></label>
+                        <select id="fYear">
+                            <option value="Year 1">Year 1</option>
+                            <option value="Year 2">Year 2</option>
+                            <option value="Year 3" selected>Year 3</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Category</label>
+                    <input type="text" id="fCat" placeholder="e.g. Machine Learning, Web Dev, UI/UX…" />
+                </div>
+                <div class="field">
+                    <label>Description</label>
+                    <textarea id="fDesc" rows="4"
+                        placeholder="What did you build? What problem did it solve?"></textarea>
+                </div>
+                <div class="field">
+                    <label>Cover image</label>
+                    <div class="upload-zone" id="uploadZone">
+                        <input type="file" id="imgInput" accept="image/*" />
+                        <p>Click to upload or drag an image here</p>
+                        <span class="upload-hint">JPG, PNG, WebP · max 5 MB</span>
+                    </div>
+                    <div id="imgPreviewWrap" style="display:none;margin-top:10px">
+                        <img id="imgPreview" style="max-height:160px;border-radius:8px;border:1px solid #eee"
+                            alt="Preview" />
+                        <button class="btn-ghost" id="removeImgBtn"
+                            style="margin-left:10px;font-size:13px">Remove</button>
+                    </div>
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label>GitHub link</label>
+                        <input type="url" id="fGithub" placeholder="https://github.com/…" />
+                    </div>
+                    <div class="field">
+                        <label>Live demo link</label>
+                        <input type="url" id="fDemo" placeholder="https://…" />
+                    </div>
+                </div>
+                <div id="projectStatus" class="status-msg"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" id="cancelProjectBtn">Cancel</button>
+                <button class="btn-primary" id="saveProjectBtn">Save project</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp }
+            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject }
+            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+        // ─── PASTE YOUR FIREBASE CONFIG HERE ───────────────────────────────────────
+        const firebaseConfig = {
+            apiKey: "AIzaSyAiWHgPTvvXTuOtRYm9qhy4oPEkPIkkegg",
+            authDomain: "my-eportfolio-8e1c7.firebaseapp.com",
+            projectId: "my-eportfolio-8e1c7",
+            storageBucket: "my-eportfolio-8e1c7.firebasestorage.app",
+            messagingSenderId: "230548434439",
+            appId: "1:230548434439:web:d4c91bb95af385616204a2",
+            measurementId: "G-08JY376XVE"
+        };
+        // ───────────────────────────────────────────────────────────────────────────
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const provider = new GoogleAuthProvider();
+
+        document.getElementById("loginBtn").addEventListener("click", () => signInWithPopup(auth, provider));
+        document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
+
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                document.getElementById("loginScreen").style.display = "none";
+                document.getElementById("adminDash").style.display = "block";
+                document.getElementById("adminUser").textContent = user.displayName || user.email;
+                loadProfile();
+                loadProjects();
+            } else {
+                document.getElementById("loginScreen").style.display = "flex";
+                document.getElementById("adminDash").style.display = "none";
+            }
+        });
+
+        async function loadProfile() {
+            try {
+                const snap = await getDoc(doc(db, "profile", "main"));
+                if (snap.exists()) {
+                    const p = snap.data();
+                    document.getElementById("pName").value = p.name || "";
+                    document.getElementById("pTagline").value = p.tagline || "";
+                    document.getElementById("pBio").value = p.bio || "";
+                    document.getElementById("pGithub").value = p.github || "";
+                    document.getElementById("pLinkedin").value = p.linkedin || "";
+                    document.getElementById("pEmail").value = p.email || "";
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById("saveProfileBtn").addEventListener("click", async () => {
+            const btn = document.getElementById("saveProfileBtn");
+            btn.disabled = true; btn.textContent = "Saving…";
+            try {
+                await setDoc(doc(db, "profile", "main"), {
+                    name: document.getElementById("pName").value.trim(),
+                    tagline: document.getElementById("pTagline").value.trim(),
+                    bio: document.getElementById("pBio").value.trim(),
+                    github: document.getElementById("pGithub").value.trim(),
+                    linkedin: document.getElementById("pLinkedin").value.trim(),
+                    email: document.getElementById("pEmail").value.trim(),
+                });
+                showStatus("profileStatus", "Profile saved ✓", "success");
+            } catch (e) {
+                showStatus("profileStatus", "Error: " + e.message, "error");
+            }
+            btn.disabled = false; btn.textContent = "Save profile";
+        });
+
+        let projects = [];
+        let editingId = null;
+        let pendingFile = null;
+        let existingImageUrl = null;
+
+        async function loadProjects() {
+            const list = document.getElementById("adminProjectList");
+            list.innerHTML = `<p class="loading-text">Loading…</p>`;
+            try {
+                const snap = await getDocs(collection(db, "projects"));
+                projects = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                projects.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                renderAdminList();
+            } catch (e) {
+                list.innerHTML = `<p class="error-text">Could not load projects.</p>`;
+            }
+        }
+
+        function renderAdminList() {
+            const list = document.getElementById("adminProjectList");
+            if (!projects.length) {
+                list.innerHTML = `<div class="empty-state"><p>No projects yet. Add your first one!</p></div>`;
+                return;
+            }
+            list.innerHTML = projects.map(p => `
+        <div class="admin-project-row" data-id="${p.id}">
+          <div class="admin-project-thumb">
+            ${p.imageUrl ? `<img src="${p.imageUrl}" alt="" />` : `<div class="thumb-placeholder"></div>`}
+          </div>
+          <div class="admin-project-info">
+            <strong>${p.title}</strong>
+            <span>${p.year}${p.category ? " · " + p.category : ""}</span>
+          </div>
+          <div class="admin-project-actions">
+            <button class="btn-ghost edit-btn" data-id="${p.id}">Edit</button>
+            <button class="btn-danger delete-btn" data-id="${p.id}">Delete</button>
+          </div>
+        </div>
+      `).join("");
+            list.querySelectorAll(".edit-btn").forEach(btn =>
+                btn.addEventListener("click", () => openProjectModal(btn.dataset.id)));
+            list.querySelectorAll(".delete-btn").forEach(btn =>
+                btn.addEventListener("click", () => deleteProject(btn.dataset.id)));
+        }
+
+        function openProjectModal(id) {
+            editingId = id || null;
+            pendingFile = null;
+            existingImageUrl = null;
+            const p = id ? projects.find(x => x.id === id) : null;
+            document.getElementById("projectModalTitle").textContent = id ? "Edit project" : "Add project";
+            document.getElementById("fTitle").value = p?.title || "";
+            document.getElementById("fYear").value = p?.year || "Year 3";
+            document.getElementById("fCat").value = p?.category || "";
+            document.getElementById("fDesc").value = p?.description || "";
+            document.getElementById("fGithub").value = p?.github || "";
+            document.getElementById("fDemo").value = p?.demo || "";
+            document.getElementById("imgInput").value = "";
+            document.getElementById("projectStatus").textContent = "";
+            if (p?.imageUrl) {
+                existingImageUrl = p.imageUrl;
+                document.getElementById("imgPreview").src = p.imageUrl;
+                document.getElementById("imgPreviewWrap").style.display = "block";
+            } else {
+                document.getElementById("imgPreviewWrap").style.display = "none";
+                document.getElementById("imgPreview").src = "";
+            }
+            document.getElementById("projectModal").classList.add("open");
+            document.body.style.overflow = "hidden";
+        }
+
+        function closeProjectModal() {
+            document.getElementById("projectModal").classList.remove("open");
+            document.body.style.overflow = "";
+        }
+
+        document.getElementById("openAddBtn").addEventListener("click", () => openProjectModal(null));
+        document.getElementById("projectModalClose").addEventListener("click", closeProjectModal);
+        document.getElementById("cancelProjectBtn").addEventListener("click", closeProjectModal);
+        document.getElementById("projectModal").addEventListener("click", e => { if (e.target === e.currentTarget) closeProjectModal(); });
+
+        document.getElementById("imgInput").addEventListener("change", e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) { alert("Image must be under 5 MB."); return; }
+            pendingFile = file;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                document.getElementById("imgPreview").src = ev.target.result;
+                document.getElementById("imgPreviewWrap").style.display = "block";
+            };
+            reader.readAsDataURL(file);
+        });
+
+        document.getElementById("removeImgBtn").addEventListener("click", () => {
+            pendingFile = null;
+            existingImageUrl = null;
+            document.getElementById("imgInput").value = "";
+            document.getElementById("imgPreview").src = "";
+            document.getElementById("imgPreviewWrap").style.display = "none";
+        });
+
+        document.getElementById("saveProjectBtn").addEventListener("click", async () => {
+            const title = document.getElementById("fTitle").value.trim();
+            if (!title) { document.getElementById("fTitle").focus(); return; }
+            const btn = document.getElementById("saveProjectBtn");
+            btn.disabled = true; btn.textContent = "Saving…";
+            showStatus("projectStatus", "Saving…", "info");
+            try {
+                let imageUrl = existingImageUrl || null;
+                if (pendingFile) {
+                    const imgRef = ref(storage, `projects/${Date.now()}_${pendingFile.name}`);
+                    await uploadBytes(imgRef, pendingFile);
+                    imageUrl = await getDownloadURL(imgRef);
+                }
+                const data = {
+                    title,
+                    year: document.getElementById("fYear").value,
+                    category: document.getElementById("fCat").value.trim(),
+                    description: document.getElementById("fDesc").value.trim(),
+                    github: document.getElementById("fGithub").value.trim(),
+                    demo: document.getElementById("fDemo").value.trim(),
+                    imageUrl,
+                };
+                if (editingId) {
+                    await updateDoc(doc(db, "projects", editingId), data);
+                } else {
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, "projects"), data);
+                }
+                showStatus("projectStatus", "Saved ✓", "success");
+                await loadProjects();
+                setTimeout(closeProjectModal, 800);
+            } catch (e) {
+                showStatus("projectStatus", "Error: " + e.message, "error");
+            }
+            btn.disabled = false; btn.textContent = "Save project";
+        });
+
+        async function deleteProject(id) {
+            if (!confirm("Delete this project? This cannot be undone.")) return;
+            try {
+                const p = projects.find(x => x.id === id);
+                if (p?.imageUrl) { try { await deleteObject(ref(storage, p.imageUrl)); } catch (_) { } }
+                await deleteDoc(doc(db, "projects", id));
+                await loadProjects();
+            } catch (e) { alert("Could not delete: " + e.message); }
+        }
+
+        function showStatus(id, msg, type) {
+            const el = document.getElementById(id);
+            el.textContent = msg;
+            el.className = "status-msg status-" + type;
+        }
+    </script>
+</body>
+
+</html>
