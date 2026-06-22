@@ -263,13 +263,13 @@
                     <p class="modal-files-label">Attachments</p>
                     <div class="modal-file-list">
                         ${p.files.map(f => `
-                            <a href="${f.url}" target="_blank" rel="noopener" class="modal-file-item" download="${f.name}">
+                            <a href="${makeDownloadUrl(f.url, f.name)}" class="modal-file-item" download="${f.name}">
                                 <span class="modal-file-icon">${fileIcon(f.name)}</span>
                                 <span class="modal-file-info">
                                     <span class="modal-file-name">${f.name}</span>
                                     <span class="modal-file-size">${formatSize(f.size)}</span>
                                 </span>
-                                <span class="modal-file-open">↗</span>
+                                <span class="modal-file-open">↓</span>
                             </a>`).join("")}
                     </div>`;
             } else {
@@ -277,6 +277,19 @@
             }
             document.getElementById("modalBackdrop").classList.add("open");
             document.body.style.overflow = "hidden";
+        }
+
+        /**
+         * Injects Cloudinary's fl_attachment transformation so the CDN responds
+         * with Content-Disposition: attachment; filename="<original name>".
+         * This is the only cross-origin-safe way to force the correct filename.
+         * Works for both image/ and raw/ resource types.
+         */
+        function makeDownloadUrl(url, filename) {
+            if (!url || !filename) return url;
+            const encoded = encodeURIComponent(filename);
+            // Insert fl_attachment right after /upload/ (skip if already present)
+            return url.replace(/\/upload\/(?!fl_)/, `/upload/fl_attachment:${encoded}/`);
         }
 
         function fileIcon(name) {
