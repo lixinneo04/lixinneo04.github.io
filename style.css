@@ -46,7 +46,7 @@
 
 html {
     scroll-behavior: smooth;
-    scroll-padding-top: 72px;
+    scroll-padding-top: 120px; /* nav 60px + filter bar ~48px + buffer */
 }
 
 body {

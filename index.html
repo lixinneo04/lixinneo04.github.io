@@ -35,7 +35,7 @@
         </div>
     </header>
 
-    <section class="filter-bar" id="work">
+    <section class="filter-bar">
         <div class="container filter-inner">
             <span class="filter-label">Filter</span>
             <div class="filter-chips" id="filterChips">
@@ -44,7 +44,7 @@
         </div>
     </section>
 
-    <main class="container project-section">
+    <main class="container project-section" id="work">
         <div class="project-grid" id="projectGrid">
             <div class="empty-state">
                 <p>No projects yet. <a href="admin.html">Add one →</a></p>
@@ -230,6 +230,7 @@
             } catch (e) {
                 console.error("Firestore error:", e);
                 document.getElementById("projectGrid").innerHTML = `<div class="empty-state"><p>Could not load projects.<br><small style="color:#999">${e.message}</small></p></div>`;
+                buildYearTrack(); // still show ticker even on error
             }
         }
 
@@ -260,14 +261,17 @@
         }
 
         function buildYearTrack() {
-            const semesterOrder = [
+            // Always show ALL semesters in the ticker — regardless of which ones
+            // have projects — so the current semester always appears.
+            const allSemesters = [
                 "Year 1 Semester 1", "Year 1 Semester 2",
                 "Year 2 Semester 1", "Year 2 Semester 2",
                 "Year 3 Semester 1", "Year 3 Semester 2"
             ];
-            const semesters = semesterOrder.filter(s => allProjects.some(p => p.year === s));
             const track = document.getElementById("heroYearTrack");
-            track.innerHTML = semesters.map(s => `<span>${s}</span>`).join("");
+            // Duplicate for seamless loop
+            const repeated = [...allSemesters, ...allSemesters];
+            track.innerHTML = repeated.map(s => `<span>${s}</span>`).join("");
         }
 
         function renderGrid(projects, isInitial = false) {
@@ -379,6 +383,7 @@
             document.body.style.overflow = "";
         }
 
+        buildYearTrack(); // show ticker immediately, don't wait for projects
         loadProfile();
         loadProjects();
         loadCerts();
