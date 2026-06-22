@@ -146,9 +146,11 @@
                     </div>
                 </div>
                 <div class="field">
-                    <label>Project Files <span class="upload-hint" style="margin-left:6px">(PDF, ZIP, PPTX, DOCX… · max 20 MB each)</span></label>
+                    <label>Project Files <span class="upload-hint" style="margin-left:6px">(PDF, ZIP, PPTX, DOCX… · max
+                            20 MB each)</span></label>
                     <div class="upload-zone upload-zone-files" id="fileUploadZone">
-                        <input type="file" id="fileInput" accept=".pdf,.zip,.pptx,.docx,.doc,.xlsx,.txt,.py,.js,.cpp,.java,.ipynb" multiple />
+                        <input type="file" id="fileInput"
+                            accept=".pdf,.zip,.pptx,.docx,.doc,.xlsx,.txt,.py,.js,.cpp,.java,.ipynb" multiple />
                         <p>Click to attach files or drag them here</p>
                         <span class="upload-hint">PDF, ZIP, PPTX, DOCX, code files and more</span>
                     </div>
@@ -256,6 +258,7 @@
                 projects.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
                 renderAdminList();
             } catch (e) {
+                console.error("Error loading projects:", e);
                 list.innerHTML = `<p class="error-text">Could not load projects.</p>`;
             }
         }
