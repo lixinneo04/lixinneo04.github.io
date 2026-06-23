@@ -332,7 +332,7 @@
                     <p class="modal-files-label">Attachments</p>
                     <div class="modal-file-list">
                         ${p.files.map(f => `
-                            <button type="button" class="modal-file-item" onclick="downloadFile('${f.url.replace(/'/g, "&#39;")}', '${f.name.replace(/'/g, "&#39;")}')"
+                            <button type="button" class="modal-file-item" onclick="downloadFile('${f.url.replace(/'/g, "&#39;")}', '${f.name.replace(/'/g, "&#39;")}', this)"
                                 title="Download ${f.name}">
                                 <span class="modal-file-icon">${fileIcon(f.name)}</span>
                                 <span class="modal-file-info">
@@ -342,6 +342,7 @@
                                 <span class="modal-file-open">↓</span>
                             </button>`).join("")}
                     </div>`;
+
             } else {
                 filesEl.innerHTML = "";
             }
@@ -351,18 +352,24 @@
 
         /**
          * Download a Cloudinary-hosted file.
+         * Exposed on window because inline onclick="downloadFile(...)" cannot
+         * access functions defined inside a type="module" script otherwise.
          *
          * Strategy:
-         *  1. Strip any stale fl_attachment transformation baked into the URL
-         *     (old uploads may have it injected in the path, which causes errors).
-         *  2. Try a CORS blob-fetch and trigger a real <a download> click.
-         *     This works for new raw/ resource URLs (CORS enabled by Cloudinary).
-         *  3. If fetch fails (e.g. legacy image/ type PDFs), open the clean URL
-         *     in a new tab — the browser will display/download the PDF natively.
+         *  1. Strip any stale fl_attachment transformation baked into the URL.
+         *  2. Try a CORS blob-fetch → real <a download> click (works for raw/ URLs).
+         *  3. If CORS fetch fails, open the clean URL in a new tab as fallback.
          */
-        async function downloadFile(url, filename) {
-            // Strip any fl_attachment transformation already embedded in the URL path
-            // e.g. .../fl_attachment:My%20File.pdf/v123/... → .../v123/...
+        window.downloadFile = async function downloadFile(url, filename, btnEl) {
+            // Give the user immediate visual feedback
+            const origHtml = btnEl ? btnEl.innerHTML : null;
+            if (btnEl) {
+                btnEl.disabled = true;
+                const icon = btnEl.querySelector('.modal-file-open');
+                if (icon) icon.textContent = '⏳';
+            }
+
+            // Strip any fl_attachment transformation already in the URL path
             const cleanUrl = url.replace(/\/fl_attachment:[^/]*/g, '');
 
             try {
@@ -376,14 +383,26 @@
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+                if (btnEl) {
+                    const icon = btnEl.querySelector('.modal-file-open');
+                    if (icon) icon.textContent = '✓';
+                    setTimeout(() => {
+                        btnEl.disabled = false;
+                        if (icon) icon.textContent = '↓';
+                    }, 2000);
+                }
             } catch (err) {
-                // CORS blocked (common for legacy image/ type files) — open directly.
-                // The browser will show or prompt to save the file.
-                console.warn('Blob download failed, opening directly:', err);
+                // CORS blocked (old image/ type files) — open in new tab as fallback
+                console.warn('Blob download failed, opening in new tab:', err);
                 window.open(cleanUrl, '_blank', 'noopener');
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    const icon = btnEl.querySelector('.modal-file-open');
+                    if (icon) icon.textContent = '↓';
+                }
             }
-        }
+        };
 
         function fileIcon(name) {
             const ext = (name || "").split(".").pop().toLowerCase();
