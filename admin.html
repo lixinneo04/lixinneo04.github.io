@@ -431,16 +431,24 @@
         const CLOUDINARY_CLOUD  = window.ENV.CLOUDINARY_CLOUD;
         const CLOUDINARY_PRESET = window.ENV.CLOUDINARY_PRESET;
 
-        // Use /auto/upload so Cloudinary detects the resource type automatically.
-        // Images stay as image/, PDFs/ZIPs/etc. become raw/ — no preset changes needed.
-        const CLOUDINARY_AUTO_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`;
+        function cloudinaryUrl(resourceType) {
+            return `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/${resourceType}/upload`;
+        }
 
         async function uploadToCloudinary(file) {
+            // Images → image/upload, everything else (PDF/ZIP/DOCX…) → raw/upload
+            const isImage = file.type.startsWith("image/");
+            const resourceType = isImage ? "image" : "raw";
             const fd = new FormData();
             fd.append("file", file);
             fd.append("upload_preset", CLOUDINARY_PRESET);
-            const res = await fetch(CLOUDINARY_AUTO_URL, { method: "POST", body: fd });
-            if (!res.ok) throw new Error("Cloudinary upload failed: " + res.statusText);
+            // Explicitly declare resource_type in the form data for clarity
+            fd.append("resource_type", resourceType);
+            const res = await fetch(cloudinaryUrl(resourceType), { method: "POST", body: fd });
+            if (!res.ok) {
+                const body = await res.text();
+                throw new Error(`Cloudinary upload failed (${res.status}): ${body}`);
+            }
             const data = await res.json();
             return data.secure_url;
         }
