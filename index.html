@@ -332,14 +332,15 @@
                     <p class="modal-files-label">Attachments</p>
                     <div class="modal-file-list">
                         ${p.files.map(f => `
-                            <a href="${makeDownloadUrl(f.url, f.name)}" class="modal-file-item" download="${f.name}">
+                            <button type="button" class="modal-file-item" onclick="downloadFile('${f.url.replace(/'/g, "&#39;")}', '${f.name.replace(/'/g, "&#39;")}')"
+                                title="Download ${f.name}">
                                 <span class="modal-file-icon">${fileIcon(f.name)}</span>
                                 <span class="modal-file-info">
                                     <span class="modal-file-name">${f.name}</span>
                                     <span class="modal-file-size">${formatSize(f.size)}</span>
                                 </span>
                                 <span class="modal-file-open">↓</span>
-                            </a>`).join("")}
+                            </button>`).join("")}
                     </div>`;
             } else {
                 filesEl.innerHTML = "";
@@ -349,16 +350,50 @@
         }
 
         /**
-         * Injects Cloudinary's fl_attachment transformation so the CDN responds
-         * with Content-Disposition: attachment; filename="<original name>".
-         * This is the only cross-origin-safe way to force the correct filename.
-         * Works for both image/ and raw/ resource types.
+         * Download a Cloudinary-hosted file.
+         *
+         * Strategy:
+         *  1. Strip any stale fl_attachment transformation baked into the URL
+         *     (old uploads may have it injected in the path).
+         *  2. For raw/ resource URLs: fetch as blob and trigger download — CORS
+         *     is enabled on Cloudinary raw delivery so this works reliably.
+         *  3. For image/ resource URLs (legacy PDF uploads stored under image type):
+         *     fall back to opening with fl_attachment as a query-string param,
+         *     which tells Cloudinary to force-download instead of displaying.
          */
-        function makeDownloadUrl(url, filename) {
-            if (!url || !filename) return url;
-            const encoded = encodeURIComponent(filename);
-            // Insert fl_attachment right after /upload/ (skip if already present)
-            return url.replace(/\/upload\/(?!fl_)/, `/upload/fl_attachment:${encoded}/`);
+        async function downloadFile(url, filename) {
+            // 1. Remove any fl_attachment transformation already in the URL path
+            //    e.g. .../fl_attachment:My%20File.pdf/v123/... → .../v123/...
+            const cleanUrl = url.replace(/\/fl_attachment:[^/]*/g, '');
+
+            try {
+                const res = await fetch(cleanUrl, { mode: 'cors' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const blob = await res.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+            } catch (err) {
+                console.warn('Blob download failed, trying fl_attachment fallback:', err);
+                // Build a Cloudinary fl_attachment URL for forcing the download header.
+                // Works by injecting the transformation before the version segment.
+                try {
+                    const encoded = encodeURIComponent(filename);
+                    // Insert fl_attachment after /upload/ (handles both image/ and raw/)
+                    const attachUrl = cleanUrl.replace(
+                        /\/(image|raw|video)\/upload\//,
+                        `/$1/upload/fl_attachment:${encoded}/`
+                    );
+                    window.open(attachUrl, '_blank', 'noopener');
+                } catch (e2) {
+                    window.open(cleanUrl, '_blank', 'noopener');
+                }
+            }
         }
 
         function fileIcon(name) {

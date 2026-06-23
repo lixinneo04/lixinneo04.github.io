@@ -430,13 +430,24 @@
         // ─── Cloudinary ─────────────────────────────────────────────────────────────
         const CLOUDINARY_CLOUD  = window.ENV.CLOUDINARY_CLOUD;
         const CLOUDINARY_PRESET = window.ENV.CLOUDINARY_PRESET;
-        const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/upload`;
+
+        // Images → /image/upload, all other files (PDF, ZIP, DOCX…) → /raw/upload
+        // Using the raw resource type ensures Cloudinary serves files with correct
+        // Content-Disposition and CORS headers, making browser downloads work.
+        const IMAGE_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
+        const RAW_UPLOAD_URL   = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/raw/upload`;
+
+        const IMAGE_MIME_PREFIXES = ["image/"];
+        function isImageFile(file) {
+            return IMAGE_MIME_PREFIXES.some(p => file.type.startsWith(p));
+        }
 
         async function uploadToCloudinary(file) {
+            const endpoint = isImageFile(file) ? IMAGE_UPLOAD_URL : RAW_UPLOAD_URL;
             const fd = new FormData();
             fd.append("file", file);
             fd.append("upload_preset", CLOUDINARY_PRESET);
-            const res = await fetch(CLOUDINARY_URL, { method: "POST", body: fd });
+            const res = await fetch(endpoint, { method: "POST", body: fd });
             if (!res.ok) throw new Error("Cloudinary upload failed: " + res.statusText);
             const data = await res.json();
             return data.secure_url;
