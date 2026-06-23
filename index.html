@@ -354,16 +354,15 @@
          *
          * Strategy:
          *  1. Strip any stale fl_attachment transformation baked into the URL
-         *     (old uploads may have it injected in the path).
-         *  2. For raw/ resource URLs: fetch as blob and trigger download — CORS
-         *     is enabled on Cloudinary raw delivery so this works reliably.
-         *  3. For image/ resource URLs (legacy PDF uploads stored under image type):
-         *     fall back to opening with fl_attachment as a query-string param,
-         *     which tells Cloudinary to force-download instead of displaying.
+         *     (old uploads may have it injected in the path, which causes errors).
+         *  2. Try a CORS blob-fetch and trigger a real <a download> click.
+         *     This works for new raw/ resource URLs (CORS enabled by Cloudinary).
+         *  3. If fetch fails (e.g. legacy image/ type PDFs), open the clean URL
+         *     in a new tab — the browser will display/download the PDF natively.
          */
         async function downloadFile(url, filename) {
-            // 1. Remove any fl_attachment transformation already in the URL path
-            //    e.g. .../fl_attachment:My%20File.pdf/v123/... → .../v123/...
+            // Strip any fl_attachment transformation already embedded in the URL path
+            // e.g. .../fl_attachment:My%20File.pdf/v123/... → .../v123/...
             const cleanUrl = url.replace(/\/fl_attachment:[^/]*/g, '');
 
             try {
@@ -379,20 +378,10 @@
                 document.body.removeChild(a);
                 setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
             } catch (err) {
-                console.warn('Blob download failed, trying fl_attachment fallback:', err);
-                // Build a Cloudinary fl_attachment URL for forcing the download header.
-                // Works by injecting the transformation before the version segment.
-                try {
-                    const encoded = encodeURIComponent(filename);
-                    // Insert fl_attachment after /upload/ (handles both image/ and raw/)
-                    const attachUrl = cleanUrl.replace(
-                        /\/(image|raw|video)\/upload\//,
-                        `/$1/upload/fl_attachment:${encoded}/`
-                    );
-                    window.open(attachUrl, '_blank', 'noopener');
-                } catch (e2) {
-                    window.open(cleanUrl, '_blank', 'noopener');
-                }
+                // CORS blocked (common for legacy image/ type files) — open directly.
+                // The browser will show or prompt to save the file.
+                console.warn('Blob download failed, opening directly:', err);
+                window.open(cleanUrl, '_blank', 'noopener');
             }
         }
 
